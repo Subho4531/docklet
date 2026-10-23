@@ -40,7 +40,8 @@
 ## Git workflow
 
 - Commit each self-contained, verified change. Do not batch unrelated work.
-- Use `.opencode/agents/git-committer.md` for commits after implementation changes.
+- Do not wait for the user to ask: after every completed, verified change, run the `git-committer` agent (defined in `.opencode/agents/git-committer.md`) to commit it.
+- The committer does not push. Push only when asked, using the auth instructions below.
 - Conventional Commits, imperative and scoped where useful: `feat(tray): ...`, `fix(redis): ...`, `docs: ...`.
 - Stage only intended files. Never commit build output, dependencies, secrets, or unrelated edits.
 - Do not amend, rebase, or force-push unless explicitly asked.
