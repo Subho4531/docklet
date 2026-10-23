@@ -1,5 +1,4 @@
 use std::sync::atomic::Ordering;
-use std::time::Duration;
 
 use tauri::{AppHandle, Manager, PhysicalPosition};
 
@@ -70,6 +69,7 @@ pub fn hide_popup(app: &AppHandle) {
     }
 }
 
+#[cfg(not(debug_assertions))]
 pub fn schedule_auto_hide(app: &AppHandle) {
     let Some(state) = app.try_state::<AppState>() else {
         return;
@@ -78,7 +78,7 @@ pub fn schedule_auto_hide(app: &AppHandle) {
     let app = app.clone();
 
     tauri::async_runtime::spawn(async move {
-        tokio::time::sleep(Duration::from_millis(140)).await;
+        tokio::time::sleep(std::time::Duration::from_millis(140)).await;
 
         let Some(state) = app.try_state::<AppState>() else {
             return;

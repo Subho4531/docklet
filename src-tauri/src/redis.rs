@@ -137,7 +137,9 @@ fn is_port_conflict(detail: &str) -> bool {
 
 fn is_missing_error(detail: &str) -> bool {
     let detail = detail.to_ascii_lowercase();
-    detail.contains("no such object") || detail.contains("no such container")
+    detail.contains("no such object")
+        || detail.contains("no such container")
+        || detail.contains("no such volume")
 }
 
 fn clean_detail(detail: &str) -> String {
@@ -664,6 +666,9 @@ mod tests {
     fn recognises_missing_container_errors() {
         assert!(is_missing_error("Error: No such object: docklet-redis"));
         assert!(is_missing_error("Error: No such container: docklet-redis"));
+        assert!(is_missing_error(
+            "Error response from daemon: get docklet-redis-data: no such volume"
+        ));
         assert!(!is_missing_error("permission denied"));
     }
 

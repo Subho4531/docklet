@@ -1,0 +1,27 @@
+<svg width="1024" height="1024" viewBox="0 0 1024 1024" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="tile" x1="218" y1="62" x2="824" y2="974" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#FF7B80" />
+      <stop offset="0.42" stop-color="#FF5A5F" />
+      <stop offset="1" stop-color="#D63B43" />
+    </linearGradient>
+    <linearGradient id="shade" x1="512" y1="420" x2="512" y2="1000" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#000000" stop-opacity="0" />
+      <stop offset="1" stop-color="#36070B" stop-opacity="0.24" />
+    </linearGradient>
+    <filter id="mark-shadow" x="235" y="237" width="554" height="558" filterUnits="userSpaceOnUse">
+      <feDropShadow dx="0" dy="18" stdDeviation="18" flood-color="#5B0D12" flood-opacity="0.24" />
+    </filter>
+  </defs>
+
+  <rect x="40" y="40" width="944" height="944" rx="238" fill="url(#tile)" />
+  <rect x="40" y="40" width="944" height="944" rx="238" fill="url(#shade)" />
+  <rect x="75" y="75" width="874" height="874" rx="207" stroke="#FFFFFF" stroke-opacity="0.24" stroke-width="10" />
+
+  <g filter="url(#mark-shadow)">
+    <ellipse cx="512" cy="345" rx="190" ry="78" fill="#FFFFFF" fill-opacity="0.98" />
+    <path d="M322 345V630C322 673.1 407 708 512 708C617 708 702 673.1 702 630V345" stroke="#FFFFFF" stroke-opacity="0.98" stroke-width="52" />
+    <path d="M322 440C322 483.1 407 518 512 518C617 518 702 483.1 702 440" stroke="#FFFFFF" stroke-opacity="0.98" stroke-width="46" />
+    <path d="M322 540C322 583.1 407 618 512 618C617 618 702 583.1 702 540" stroke="#FFFFFF" stroke-opacity="0.98" stroke-width="46" />
+  </g>
+</svg>

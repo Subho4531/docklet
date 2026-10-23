@@ -51,6 +51,9 @@ pub fn run() {
                     window::hide_popup(window.app_handle());
                 }
                 tauri::WindowEvent::Focused(false) => {
+                    // Debug builds keep the window open so the editor and
+                    // devtools can be used without dismissing the popup.
+                    #[cfg(not(debug_assertions))]
                     if window.is_visible().unwrap_or(false) {
                         window::schedule_auto_hide(window.app_handle());
                     }
