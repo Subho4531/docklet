@@ -1,9 +1,42 @@
+use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use std::time::Duration;
 use tokio::process::Command;
 
 const DOCKER_TIMEOUT: Duration = Duration::from_secs(25);
 const CREATE_NO_WINDOW: u32 = 0x0800_0000;
+
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct DockerSearchResult {
+    pub name: String,
+    pub description: String,
+    pub star_count: u64,
+    pub is_official: bool,
+}
+
+#[derive(Debug, Deserialize)]
+struct DockerSearchRow {
+    #[serde(rename = "Name")]
+    name: String,
+    #[serde(rename = "Description", default)]
+    description: String,
+    #[serde(rename = "StarCount", default)]
+    star_count: String,
+    #[serde(rename = "IsOfficial", default)]
+    is_official: String,
+}
+
+impl DockerSearchRow {
+    fn into_result(self) -> DockerSearchResult {
+        DockerSearchResult {
+            name: self.name,
+            description: self.description,
+            star_count: self.star_count.parse().unwrap_or(0),
+            is_official: self.is_official.eq_ignore_ascii_case("true"),
+        }
+    }
+}
 
 #[derive(Debug)]
 pub enum DockerError {
@@ -149,6 +182,31 @@ pub async fn run_docker(args: &[&str]) -> Result<String, DockerError> {
     run_docker_with_timeout(args, DOCKER_TIMEOUT).await
 }
 
+pub async fn search_images(query: &str) -> Result<Vec<DockerSearchResult>, DockerError> {
+    let output = run_docker_with_timeout(
+        &["search", query, "--limit", "30", "--format", "{{json .}}"],
+        Duration::from_secs(20),
+    )
+    .await?;
+
+    let mut results = Vec::new();
+    let mut seen = std::collections::HashSet::new();
+    for line in output
+        .lines()
+        .map(str::trim)
+        .filter(|line| !line.is_empty())
+    {
+        let row: DockerSearchRow = serde_json::from_str(line).map_err(|error| {
+            DockerError::Parse(format!("Couldn't read Docker Hub search results: {error}"))
+        })?;
+        if seen.insert(row.name.clone()) {
+            results.push(row.into_result());
+        }
+    }
+
+    Ok(results)
+}
+
 pub async fn ensure_docker() -> Result<(), String> {
     run_docker_with_timeout(
         &["info", "--format", "{{.ServerVersion}}"],
@@ -243,5 +301,19 @@ mod tests {
             "Bind for 127.0.0.1:6379 failed: port is already allocated"
         ));
         assert!(is_port_conflict("address already in use"));
+    }
+
+    #[test]
+    fn parses_docker_search_rows() {
+        let row: DockerSearchRow = serde_json::from_str(
+            r#"{"Description":"Official Redis","IsOfficial":"true","Name":"redis","StarCount":"13624"}"#,
+        )
+        .expect("search row should parse");
+        let result = row.into_result();
+
+        assert_eq!(result.name, "redis");
+        assert_eq!(result.description, "Official Redis");
+        assert_eq!(result.star_count, 13624);
+        assert!(result.is_official);
     }
 }

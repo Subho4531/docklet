@@ -56,7 +56,14 @@ export interface AppSettings {
 
 export type ServiceOperation = "start" | "stop" | "reset";
 
-export type MainPage = "services" | "settings";
+export type MainPage = "services" | "library" | "settings";
+
+export interface DockerSearchResult {
+  name: string;
+  description: string;
+  starCount: number;
+  isOfficial: boolean;
+}
 
 export type ToastTone = "default" | "danger";
 

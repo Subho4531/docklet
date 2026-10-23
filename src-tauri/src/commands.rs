@@ -3,6 +3,7 @@ use std::collections::HashSet;
 use tauri::{AppHandle, Emitter, Manager};
 use tauri_plugin_clipboard_manager::ClipboardExt;
 
+use crate::docker;
 use crate::services::{self, ServiceState, ServicesSnapshot};
 use crate::settings::{self, AppSettings};
 use crate::state::AppState;
@@ -201,9 +202,47 @@ pub fn hide_popup(app: AppHandle) {
 }
 
 #[tauri::command]
+pub fn resize_popup(app: AppHandle, height: f64) -> Result<(), String> {
+    let height = height.clamp(180.0, 700.0);
+    let app_handle = app.clone();
+
+    app.run_on_main_thread(move || {
+        let Some(window) = app_handle.get_webview_window(window::POPUP_WINDOW) else {
+            return;
+        };
+        let _ = window.set_size(tauri::LogicalSize::new(window::POPUP_WIDTH, height));
+        window::apply_popup_shape(&window);
+        window::reposition_popup(&app_handle);
+    })
+    .map_err(|error| format!("Couldn't resize the quick panel. {error}"))
+}
+
+#[tauri::command]
+pub async fn search_docker_images(
+    query: String,
+) -> Result<Vec<docker::DockerSearchResult>, String> {
+    let query = query.trim();
+    if query.chars().count() < 2 {
+        return Ok(Vec::new());
+    }
+    if query.chars().count() > 80
+        || query
+            .chars()
+            .any(|character| character.is_control() || character == '\0')
+    {
+        return Err("Search terms must be 2–80 visible characters.".to_string());
+    }
+
+    docker::search_images(query)
+        .await
+        .map_err(|error| error.user_message())
+}
+
+#[tauri::command]
 pub fn open_main(app: AppHandle, page: Option<String>) {
     let page = match page.as_deref() {
         Some("settings") => "settings",
+        Some("library") => "library",
         _ => "services",
     };
     window::show_main(&app, page);

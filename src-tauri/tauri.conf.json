@@ -15,7 +15,7 @@
         "label": "popup",
         "title": "Docklet Quick Panel",
         "width": 380,
-        "height": 410,
+        "height": 300,
         "resizable": false,
         "maximizable": false,
         "minimizable": false,

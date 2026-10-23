@@ -1,4 +1,4 @@
-<div class="popup-shell">
+<div #popupShell class="popup-shell">
   <div class="ambient ambient-top" aria-hidden="true"></div>
   <div class="ambient ambient-bottom" aria-hidden="true"></div>
 
@@ -47,7 +47,9 @@
   <main class="popup-main">
     <div class="services-heading">
       <span>Services</span>
-      <span class="services-hint">Click to toggle · right-click to copy</span>
+      @if (visibleServices().length > 0) {
+        <span class="services-hint">Click to toggle · right-click to copy</span>
+      }
     </div>
 
     <div class="service-scroll">
@@ -56,9 +58,23 @@
           <span class="spinner" aria-hidden="true"></span>
           <span>Checking Docker</span>
         </div>
+      } @else if (visibleServices().length === 0) {
+        <div class="popup-empty">
+          <span class="empty-mark" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none">
+              <path d="M4.5 8.5h15v9.2a1.8 1.8 0 0 1-1.8 1.8H6.3a1.8 1.8 0 0 1-1.8-1.8V8.5Z" />
+              <path d="M8 8.5V6.7a4 4 0 0 1 8 0v1.8" />
+              <path d="M12 12.2v3.2M10.4 14.6h3.2" />
+            </svg>
+          </span>
+          <span class="empty-copy">
+            <strong>No services set up</strong>
+            <span>Open Docklet to create your first local service.</span>
+          </span>
+        </div>
       } @else {
         <div class="service-grid">
-          @for (service of store.services(); track service.id) {
+          @for (service of visibleServices(); track service.id) {
             <button
               type="button"
               class="service-tile"
@@ -122,12 +138,7 @@
       <span class="engine-dot" aria-hidden="true"></span>
       <span>{{ store.dockerAvailable() ? "Docker ready" : "Docker offline" }}</span>
     </span>
-    <button
-      type="button"
-      class="open-app-button"
-      [disabled]="!store.dockerAvailable() && store.services().length === 0"
-      (click)="openApp()"
-    >
+    <button type="button" class="open-app-button" (click)="openApp()">
       Open Docklet
       <svg viewBox="0 0 20 20" fill="none" aria-hidden="true">
         <path d="M7.5 5.5L12 10l-4.5 4.5" />

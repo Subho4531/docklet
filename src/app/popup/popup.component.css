@@ -1,7 +1,8 @@
 :host {
   display: block;
   width: 100%;
-  height: 100%;
+  height: auto;
+  background: transparent;
 }
 
 .popup-shell {
@@ -9,7 +10,7 @@
   display: flex;
   flex-direction: column;
   width: 100%;
-  height: 100%;
+  height: auto;
   padding: 13px 14px 10px;
   overflow: hidden;
   isolation: isolate;
@@ -24,9 +25,7 @@
       rgba(11, 12, 16, 0.72) 55%,
       rgba(7, 8, 11, 0.8) 100%
     );
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.13),
-    0 24px 60px rgba(0, 0, 0, 0.34);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.13);
 }
 
 .popup-shell::after {
@@ -130,7 +129,7 @@
 .popup-main {
   display: flex;
   min-height: 0;
-  flex: 1;
+  flex: 0 0 auto;
   flex-direction: column;
   gap: 7px;
   margin-top: 12px;
@@ -162,10 +161,12 @@
 
 .service-scroll {
   min-height: 0;
-  flex: 1;
+  max-height: 331px;
+  flex: 0 0 auto;
   margin: 0 -2px;
   padding: 1px 2px 3px;
   overflow-y: auto;
+  overscroll-behavior: contain;
 }
 
 .service-grid {
@@ -280,12 +281,66 @@
 
 .popup-loading {
   display: flex;
-  height: 158px;
+  height: 104px;
   align-items: center;
   justify-content: center;
   gap: 8px;
   color: var(--ink-faint);
   font-size: 10px;
+}
+
+.popup-empty {
+  display: flex;
+  min-height: 96px;
+  align-items: center;
+  gap: 12px;
+  padding: 15px 13px;
+  border: 1px dashed rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.018);
+}
+
+.empty-mark {
+  display: grid;
+  width: 36px;
+  height: 36px;
+  flex: 0 0 36px;
+  place-items: center;
+  border: 1px solid rgba(209, 68, 73, 0.2);
+  border-radius: 10px;
+  background: rgba(209, 68, 73, 0.075);
+  color: var(--accent-bright);
+}
+
+.empty-mark svg {
+  width: 20px;
+  height: 20px;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.45;
+}
+
+.empty-copy {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.empty-copy strong {
+  color: var(--ink);
+  font-family: var(--font-display);
+  font-size: 11.5px;
+  font-weight: 650;
+  letter-spacing: -0.01em;
+}
+
+.empty-copy span {
+  color: var(--ink-faint);
+  font-size: 9px;
+  line-height: 1.45;
 }
 
 .spinner {

@@ -10,6 +10,8 @@ import type { UnlistenFn } from "@tauri-apps/api/event";
 import { DockletApi } from "./docklet-api.service";
 import type {
   AppSettings,
+  CustomService,
+  DockerSearchResult,
   MainPage,
   ServiceOperation,
   ServiceStatus,
@@ -179,6 +181,54 @@ export class DockletStore {
     }
   }
 
+  searchDockerImages(query: string): Promise<DockerSearchResult[]> {
+    return this.api.searchDockerImages(query);
+  }
+
+  resizePopup(height: number): Promise<void> {
+    return this.api.resizePopup(height);
+  }
+
+  async addCustomService(service: CustomService): Promise<boolean> {
+    if (this.settingsSaving()) {
+      return false;
+    }
+
+    this.settingsSaving.set(true);
+    try {
+      let settings = this.settings();
+      if (!settings) {
+        settings = await this.api.getSettings();
+      }
+      const saved = await this.api.saveSettings({
+        ...settings,
+        customServices: [...settings.customServices, service],
+      });
+      this.settings.set(saved);
+      this.showToast(`${service.name} added to Docklet`);
+      await this.refreshQuietly();
+      return true;
+    } catch (error) {
+      this.showToast(this.describeError(error), "danger");
+      return false;
+    } finally {
+      this.settingsSaving.set(false);
+    }
+  }
+
+  async startServiceById(serviceId: string): Promise<void> {
+    let service = this.service(serviceId);
+    if (!service) {
+      await this.refreshQuietly();
+      service = this.service(serviceId);
+    }
+    if (!service) {
+      this.showToast("The new service couldn't be loaded. Open Services and try again.", "danger");
+      return;
+    }
+    await this.startService(service);
+  }
+
   async saveSettings(settings: AppSettings): Promise<boolean> {
     if (this.settingsSaving()) {
       return false;
@@ -297,8 +347,7 @@ export class DockletStore {
     }
 
     if (pageResult?.status === "fulfilled") {
-      const page = pageResult.value as MainPage;
-      this.mainPage.set(page === "settings" ? "settings" : "services");
+      this.mainPage.set(this.normalizePage(pageResult.value));
     }
 
     if (document.hasFocus() && !document.hidden) {
@@ -328,7 +377,7 @@ export class DockletStore {
           this.settings.set(settings);
         }),
         this.api.onMainPage((page) => {
-          this.mainPage.set(page === "settings" ? "settings" : "services");
+          this.mainPage.set(this.normalizePage(page));
         }),
       ]);
       this.unlisteners.push(...listeners);
@@ -408,6 +457,10 @@ export class DockletStore {
         this.showToast(this.describeError(error), "danger");
       }
     }
+  }
+
+  private normalizePage(page: unknown): MainPage {
+    return page === "settings" || page === "library" ? page : "services";
   }
 
   private describeError(error: unknown): string {

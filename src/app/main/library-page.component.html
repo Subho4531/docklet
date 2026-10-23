@@ -1,0 +1,191 @@
+<section class="page library-page">
+  <header class="page-header">
+    <div>
+      <span class="page-kicker">Discover</span>
+      <h1>Library</h1>
+      <p>
+        Start with a proven local service, or search Docker Hub for the exact
+        image you need. Every install becomes one managed Docklet container.
+      </p>
+    </div>
+    <div class="library-summary">
+      <strong>{{ catalog.length }}</strong>
+      <span>ready-to-run services</span>
+    </div>
+  </header>
+
+  <section class="search-panel" aria-label="Search Docker Hub">
+    <form class="library-search" role="search" (ngSubmit)="search()">
+      <svg class="search-icon" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+        <circle cx="8.7" cy="8.7" r="4.8" />
+        <path d="M12.3 12.3l4 4" />
+      </svg>
+      <input
+        class="search-input"
+        name="librarySearch"
+        type="search"
+        autocomplete="off"
+        maxlength="80"
+        placeholder="Search Docker Hub images"
+        aria-label="Search Docker Hub images"
+        [ngModel]="query()"
+        (ngModelChange)="query.set($event)"
+      />
+      @if (query()) {
+        <button
+          type="button"
+          class="search-clear"
+          aria-label="Clear search"
+          (click)="showCatalog()"
+        >
+          <svg viewBox="0 0 20 20" fill="none" aria-hidden="true">
+            <path d="M6 6l8 8M14 6l-8 8" />
+          </svg>
+        </button>
+      }
+      <button type="submit" class="primary-btn search-action" [disabled]="searchBusy()">
+        @if (searchBusy()) {
+          <span class="button-spinner" aria-hidden="true"></span>
+        }
+        Search Docker
+      </button>
+    </form>
+    <p class="search-hint">
+      Docker Hub results are fetched by the Docker CLI. Select a result to set
+      its local port, volume, and environment before installing.
+    </p>
+  </section>
+
+  @if (hasSearched()) {
+    <section class="results-section" aria-live="polite">
+      <header class="section-heading">
+        <div>
+          <span class="section-kicker">Docker Hub</span>
+          <h2>Results for &ldquo;{{ query() }}&rdquo;</h2>
+        </div>
+        <button type="button" class="quiet-btn" (click)="showCatalog()">
+          Back to most used
+        </button>
+      </header>
+
+      @if (searchBusy()) {
+        <div class="search-state">
+          <span class="spinner" aria-hidden="true"></span>
+          <span>Searching Docker Hub</span>
+        </div>
+      } @else if (searchError(); as message) {
+        <div class="search-state is-error" role="alert">
+          <svg viewBox="0 0 20 20" fill="none" aria-hidden="true">
+            <circle cx="10" cy="10" r="6.8" />
+            <path d="M10 6.4v4.2M10 13.4h.01" />
+          </svg>
+          <div>
+            <strong>Search unavailable</strong>
+            <span>{{ message }}</span>
+          </div>
+        </div>
+      } @else if (searchResults().length === 0) {
+        <div class="search-state">
+          <svg viewBox="0 0 20 20" fill="none" aria-hidden="true">
+            <circle cx="8.7" cy="8.7" r="4.8" />
+            <path d="M12.3 12.3l4 4" />
+          </svg>
+          <div>
+            <strong>No images found</strong>
+            <span>Try a shorter or more general Docker Hub search.</span>
+          </div>
+        </div>
+      } @else {
+        <div class="result-list">
+          @for (result of searchResults(); track result.name) {
+            <article class="result-row">
+              <span class="result-icon">
+                <img src="assets/services/docker.svg" alt="" aria-hidden="true" />
+              </span>
+              <div class="result-copy">
+                <div class="result-title">
+                  <h3>{{ result.name }}</h3>
+                  @if (result.isOfficial) {
+                    <span class="official-badge">Official</span>
+                  }
+                </div>
+                <p>{{ result.description || "No description provided." }}</p>
+                <span class="result-stars">
+                  <span aria-hidden="true">★</span>
+                  {{ formatStars(result.starCount) }} stars
+                </span>
+              </div>
+              <button
+                type="button"
+                class="quiet-btn result-install"
+                (click)="openSearchResult(result)"
+              >
+                Configure
+                <svg viewBox="0 0 20 20" fill="none" aria-hidden="true">
+                  <path d="M7.5 5.5L12 10l-4.5 4.5" />
+                </svg>
+              </button>
+            </article>
+          }
+        </div>
+      }
+    </section>
+  } @else {
+    <section class="catalog-section">
+      <header class="section-heading">
+        <div>
+          <span class="section-kicker">Hand-picked defaults</span>
+          <h2>Most used services</h2>
+          <p>
+            Local-first images with sensible ports, volumes, and credentials
+            already filled in.
+          </p>
+        </div>
+      </header>
+
+      <div class="catalog-grid">
+        @for (item of catalog; track item.name) {
+          <button
+            type="button"
+            class="catalog-card"
+            [style.--catalog-accent]="item.accent"
+            (click)="openCatalogService(item)"
+          >
+            <span class="catalog-top">
+              <span class="catalog-mark">{{ item.monogram }}</span>
+              <span class="catalog-category">{{ item.category }}</span>
+              <svg class="catalog-arrow" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+                <path d="M7.5 5.5L12 10l-4.5 4.5" />
+              </svg>
+            </span>
+            <strong class="catalog-name">{{ item.name }}</strong>
+            <span class="catalog-tagline">{{ item.tagline }}</span>
+            <span class="catalog-meta">
+              <code>{{ item.image }}</code>
+              <span>Port {{ item.containerPort }}</span>
+            </span>
+          </button>
+        }
+      </div>
+    </section>
+  }
+
+  <p class="library-note">
+    Library installs use the same custom-service model as Settings: one image,
+    one local-only port, and an optional named volume. Docker must be running
+    to pull the image and start the container.
+  </p>
+</section>
+
+@if (dialogOpen()) {
+  <app-custom-service-dialog
+    [service]="pendingInstall()"
+    [existingIds]="existingIds()"
+    mode="create"
+    [dialogTitle]="dialogTitle()"
+    submitLabel="Install service"
+    [busy]="installing()"
+    (saved)="install($event)"
+    (cancelled)="closeDialog()"
+  />
+}

@@ -1,4 +1,4 @@
-<div class="dialog-backdrop" (click)="cancelled.emit()">
+<div class="dialog-backdrop" (click)="close()">
   <section
     class="dialog-card custom-dialog"
     role="dialog"
@@ -12,9 +12,7 @@
       </span>
       <div class="dialog-heading">
         <span class="dialog-kicker">Docker service</span>
-        <h2 id="custom-dialog-title">
-          {{ editing() ? "Edit custom service" : "Add custom service" }}
-        </h2>
+        <h2 id="custom-dialog-title">{{ heading() }}</h2>
         <p>
           Docklet creates one managed container, an optional named volume, and
           a local-only port binding.
@@ -24,7 +22,8 @@
         type="button"
         class="icon-btn"
         aria-label="Close custom service dialog"
-        (click)="cancelled.emit()"
+        [disabled]="busy()"
+        (click)="close()"
       >
         <svg viewBox="0 0 20 20" fill="none" aria-hidden="true">
           <path d="M5.5 5.5l9 9M14.5 5.5l-9 9" />
@@ -151,11 +150,19 @@
       }
 
       <div class="dialog-actions">
-        <button type="button" class="quiet-btn" (click)="cancelled.emit()">
+        <button
+          type="button"
+          class="quiet-btn"
+          [disabled]="busy()"
+          (click)="close()"
+        >
           Cancel
         </button>
-        <button type="submit" class="primary-btn">
-          {{ editing() ? "Save service" : "Add service" }}
+        <button type="submit" class="primary-btn" [disabled]="busy()">
+          @if (busy()) {
+            <span class="button-spinner" aria-hidden="true"></span>
+          }
+          {{ actionLabel() }}
         </button>
       </div>
     </form>

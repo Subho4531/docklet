@@ -271,6 +271,7 @@
   <app-custom-service-dialog
     [service]="editingCustom()"
     [existingIds]="existingCustomIds()"
+    [mode]="editingCustom() ? 'edit' : 'create'"
     (saved)="saveCustom($event)"
     (cancelled)="closeCustomDialog()"
   />

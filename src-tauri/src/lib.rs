@@ -41,6 +41,10 @@ pub fn run() {
             let handles = tray::create(app.handle())?;
             app.manage(handles);
 
+            if let Some(popup) = app.get_webview_window(window::POPUP_WINDOW) {
+                window::apply_popup_shape(&popup);
+            }
+
             let app_handle = app.handle().clone();
             tauri::async_runtime::spawn(async move {
                 commands::refresh_and_publish(&app_handle).await;
@@ -60,11 +64,15 @@ pub fn run() {
                     window::hide_popup(window.app_handle());
                 }
                 tauri::WindowEvent::Focused(false) => {
-                    // Debug builds keep the quick panel open so editor and
-                    // devtools interactions don't dismiss it.
-                    #[cfg(not(debug_assertions))]
                     if window.is_visible().unwrap_or(false) {
                         window::schedule_auto_hide(window.app_handle());
+                    }
+                }
+                tauri::WindowEvent::Resized(_) => {
+                    if let Some(popup) =
+                        window.app_handle().get_webview_window(window::POPUP_WINDOW)
+                    {
+                        window::apply_popup_shape(&popup);
                     }
                 }
                 _ => {}
@@ -86,7 +94,9 @@ pub fn run() {
             commands::get_settings,
             commands::save_settings,
             commands::remove_custom_service,
+            commands::search_docker_images,
             commands::hide_popup,
+            commands::resize_popup,
             commands::open_main,
             commands::get_main_page,
             commands::get_autostart_enabled,

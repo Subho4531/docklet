@@ -4,6 +4,7 @@ import { listen, type UnlistenFn } from "@tauri-apps/api/event";
 
 import type {
   AppSettings,
+  DockerSearchResult,
   MainPage,
   ServiceErrorPayload,
   ServicesSnapshot,
@@ -44,8 +45,16 @@ export class DockletApi {
     return invoke<AppSettings>("remove_custom_service", { serviceId });
   }
 
+  searchDockerImages(query: string): Promise<DockerSearchResult[]> {
+    return invoke<DockerSearchResult[]>("search_docker_images", { query });
+  }
+
   hidePopup(): Promise<void> {
     return invoke<void>("hide_popup");
+  }
+
+  resizePopup(height: number): Promise<void> {
+    return invoke<void>("resize_popup", { height });
   }
 
   openMain(page: MainPage): Promise<void> {

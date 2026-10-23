@@ -1,14 +1,16 @@
 use std::sync::atomic::Ordering;
 
-use tauri::{AppHandle, Emitter, Manager, PhysicalPosition};
+use tauri::{AppHandle, Emitter, Manager, PhysicalPosition, WebviewWindow};
 
 use crate::state::AppState;
 
 pub const POPUP_WINDOW: &str = "popup";
 pub const MAIN_WINDOW: &str = "main";
+pub const POPUP_WIDTH: f64 = 380.0;
 
 const POPUP_GAP: i32 = 10;
 const SCREEN_MARGIN: i32 = 8;
+const POPUP_RADIUS: f64 = 14.0;
 
 pub fn remember_anchor(app: &AppHandle, position: PhysicalPosition<f64>) {
     if let Some(state) = app.try_state::<AppState>() {
@@ -43,9 +45,75 @@ pub fn show_popup(app: &AppHandle, anchor: Option<PhysicalPosition<f64>>) {
         })
         .unwrap_or_else(|| default_anchor(app, &window));
 
+    apply_popup_shape(&window);
     position_popup(app, &window, anchor);
     let _ = window.show();
     let _ = window.set_focus();
+}
+
+pub fn apply_popup_shape(window: &WebviewWindow) {
+    #[cfg(windows)]
+    {
+        use windows::Win32::Graphics::Gdi::{
+            CreateRoundRectRgn, DeleteObject, HGDIOBJ, SetWindowRgn,
+        };
+
+        let Ok(hwnd) = window.hwnd() else {
+            return;
+        };
+        let Ok(size) = window.outer_size() else {
+            return;
+        };
+        if size.width == 0 || size.height == 0 {
+            return;
+        }
+
+        let scale = window.scale_factor().unwrap_or(1.0);
+        let radius = (POPUP_RADIUS * scale).round().max(1.0) as i32;
+        let region = unsafe {
+            CreateRoundRectRgn(
+                0,
+                0,
+                size.width as i32 + 1,
+                size.height as i32 + 1,
+                radius * 2,
+                radius * 2,
+            )
+        };
+
+        if region.is_invalid() {
+            return;
+        }
+
+        // The operating system owns the region after a successful call.
+        if unsafe { SetWindowRgn(hwnd, Some(region), true) } == 0 {
+            unsafe {
+                let _ = DeleteObject(HGDIOBJ(region.0));
+            }
+        }
+    }
+
+    #[cfg(not(windows))]
+    {
+        let _ = window;
+    }
+}
+
+pub fn reposition_popup(app: &AppHandle) {
+    let Some(window) = app.get_webview_window(POPUP_WINDOW) else {
+        return;
+    };
+    let anchor = app.try_state::<AppState>().and_then(|state| {
+        state
+            .last_tray_anchor
+            .lock()
+            .ok()
+            .and_then(|anchor| *anchor)
+    });
+
+    if let Some(anchor) = anchor {
+        position_popup(app, &window, anchor);
+    }
 }
 
 pub fn toggle_popup(app: &AppHandle, anchor: PhysicalPosition<f64>) {
@@ -87,7 +155,6 @@ pub fn show_main(app: &AppHandle, page: &str) {
     let _ = app.emit("open-main-page", page.to_string());
 }
 
-#[cfg(not(debug_assertions))]
 pub fn schedule_auto_hide(app: &AppHandle) {
     let Some(state) = app.try_state::<AppState>() else {
         return;

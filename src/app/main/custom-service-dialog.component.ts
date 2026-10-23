@@ -2,7 +2,7 @@ import {
   Component,
   HostListener,
   OnInit,
-  inject,
+  computed,
   input,
   output,
   signal,
@@ -10,6 +10,8 @@ import {
 import { FormsModule } from "@angular/forms";
 
 import type { CustomService, EnvVar } from "../models";
+
+const RESERVED_IDS = ["redis", "postgres", "mysql", "mongodb"];
 
 interface CustomFormState {
   name: string;
@@ -31,8 +33,28 @@ interface CustomFormState {
 export class CustomServiceDialogComponent implements OnInit {
   readonly service = input<CustomService | null>(null);
   readonly existingIds = input<string[]>([]);
+  readonly mode = input<"create" | "edit">("create");
+  readonly dialogTitle = input<string>("");
+  readonly submitLabel = input<string>("");
+  readonly busy = input(false);
   readonly saved = output<CustomService>();
   readonly cancelled = output<void>();
+
+  readonly editing = computed(() => this.mode() === "edit");
+  readonly heading = computed(() => {
+    const title = this.dialogTitle().trim();
+    if (title) {
+      return title;
+    }
+    return this.editing() ? "Edit custom service" : "Add custom service";
+  });
+  readonly actionLabel = computed(() => {
+    const label = this.submitLabel().trim();
+    if (label) {
+      return label;
+    }
+    return this.editing() ? "Save service" : "Add service";
+  });
 
   readonly form = signal<CustomFormState>({
     name: "",
@@ -45,7 +67,6 @@ export class CustomServiceDialogComponent implements OnInit {
     envText: "",
   });
   readonly error = signal<string | null>(null);
-  readonly editing = signal(false);
 
   ngOnInit(): void {
     const service = this.service();
@@ -53,7 +74,6 @@ export class CustomServiceDialogComponent implements OnInit {
       return;
     }
 
-    this.editing.set(true);
     this.form.set({
       name: service.name,
       image: service.image,
@@ -70,7 +90,13 @@ export class CustomServiceDialogComponent implements OnInit {
 
   @HostListener("document:keydown.escape")
   onEscape(): void {
-    this.cancelled.emit();
+    this.close();
+  }
+
+  close(): void {
+    if (!this.busy()) {
+      this.cancelled.emit();
+    }
   }
 
   patch<K extends keyof CustomFormState>(
@@ -82,6 +108,10 @@ export class CustomServiceDialogComponent implements OnInit {
   }
 
   save(): void {
+    if (this.busy()) {
+      return;
+    }
+
     const form = this.form();
     const name = form.name.trim();
     const image = form.image.trim();
@@ -113,7 +143,10 @@ export class CustomServiceDialogComponent implements OnInit {
     }
 
     const original = this.service();
-    const id = original?.id ?? this.uniqueId(slugify(name));
+    const id =
+      this.editing() && original?.id
+        ? original.id
+        : this.uniqueId(slugify(name));
 
     this.saved.emit({
       id,
@@ -131,6 +164,11 @@ export class CustomServiceDialogComponent implements OnInit {
   private uniqueId(base: string): string {
     const normalized = base.length < 2 ? `${base || "service"}1` : base;
     const existing = new Set(this.existingIds());
+    if (!this.editing()) {
+      for (const id of RESERVED_IDS) {
+        existing.add(id);
+      }
+    }
     if (!existing.has(normalized)) {
       return normalized;
     }

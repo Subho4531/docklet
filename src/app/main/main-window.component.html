@@ -33,6 +33,20 @@
       <button
         type="button"
         class="nav-button"
+        [class.is-active]="store.mainPage() === 'library'"
+        [attr.aria-current]="store.mainPage() === 'library' ? 'page' : null"
+        (click)="navigate('library')"
+      >
+        <svg viewBox="0 0 20 20" fill="none" aria-hidden="true">
+          <path d="M10 3.2l6.4 3.3-6.4 3.3-6.4-3.3L10 3.2z" />
+          <path d="M3.6 9.9l6.4 3.3 6.4-3.3" />
+          <path d="M3.6 13.2l6.4 3.3 6.4-3.3" />
+        </svg>
+        <span>Library</span>
+      </button>
+      <button
+        type="button"
+        class="nav-button"
         [class.is-active]="store.mainPage() === 'settings'"
         [attr.aria-current]="store.mainPage() === 'settings' ? 'page' : null"
         (click)="navigate('settings')"
@@ -59,10 +73,16 @@
   </aside>
 
   <main class="workspace">
-    @if (store.mainPage() === "settings") {
-      <app-settings-page />
-    } @else {
-      <app-services-page />
+    @switch (store.mainPage()) {
+      @case ("library") {
+        <app-library-page />
+      }
+      @case ("settings") {
+        <app-settings-page />
+      }
+      @default {
+        <app-services-page />
+      }
     }
   </main>
 
