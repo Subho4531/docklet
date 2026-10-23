@@ -1,0 +1,80 @@
+:host {
+  display: contents;
+}
+
+.dialog-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  display: grid;
+  padding: 24px;
+  place-items: center;
+  background: rgba(4, 5, 8, 0.62);
+  backdrop-filter: blur(7px) saturate(115%);
+  animation: fade-in 150ms ease-out;
+}
+
+.dialog-card {
+  display: grid;
+  width: min(430px, 100%);
+  grid-template-columns: 38px minmax(0, 1fr);
+  gap: 13px;
+  padding: 18px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 13px;
+  background: linear-gradient(155deg, rgba(32, 32, 40, 0.99), rgba(16, 17, 23, 0.99));
+  box-shadow:
+    0 24px 70px rgba(0, 0, 0, 0.54),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  animation: sheet-in 190ms var(--ease);
+}
+
+.dialog-mark {
+  display: grid;
+  width: 38px;
+  height: 38px;
+  place-items: center;
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.045);
+  color: var(--ink-soft);
+}
+
+.dialog-mark.is-danger {
+  border-color: rgba(255, 116, 111, 0.18);
+  background: rgba(255, 116, 111, 0.08);
+  color: var(--danger);
+}
+
+.dialog-mark svg {
+  width: 18px;
+  height: 18px;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.4;
+}
+
+.dialog-copy h2 {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 15px;
+  font-weight: 660;
+  letter-spacing: -0.02em;
+}
+
+.dialog-copy p {
+  margin: 7px 0 0;
+  color: var(--ink-soft);
+  font-size: 10.5px;
+  line-height: 1.5;
+}
+
+.dialog-actions {
+  display: flex;
+  grid-column: 1 / -1;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 4px;
+}

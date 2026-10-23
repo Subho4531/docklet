@@ -1,0 +1,130 @@
+<section class="page">
+  <header class="page-header">
+    <div>
+      <span class="page-kicker">Local Docker</span>
+      <h1>Services</h1>
+      <p>
+        Start a service for the day, copy its URL, and close Docklet back to
+        the tray. Data stays in managed Docker volumes.
+      </p>
+    </div>
+    <div class="page-summary">
+      <strong>{{ runningLabel() }}</strong>
+      <span>{{ store.dockerAvailable() ? "Docker ready" : "Docker offline" }}</span>
+    </div>
+  </header>
+
+  @if (!store.dockerAvailable() && store.snapshot()) {
+    <div class="notice is-warning">
+      <svg viewBox="0 0 20 20" fill="none" aria-hidden="true">
+        <path d="M10 3.2l7 12.3H3L10 3.2z" />
+        <path d="M10 8v3.4M10 13.7v.1" />
+      </svg>
+      <div>
+        <strong>Docker Desktop is offline</strong>
+        <span>Start Docker Desktop, then Docklet will reconnect automatically.</span>
+      </div>
+    </div>
+  }
+
+  <div class="service-cards">
+    @for (service of store.services(); track service.id) {
+      <article
+        class="service-card"
+        [class.is-running]="service.state === 'running'"
+        [class.is-busy]="store.isBusy(service.id)"
+        [attr.data-state]="service.state"
+        (contextmenu)="copyFromContext($event, service)"
+      >
+        <div class="card-head">
+          <span class="card-icon">
+            <app-service-icon [name]="service.icon" />
+          </span>
+          <div class="card-title">
+            <div class="card-name-line">
+              <h2>{{ service.name }}</h2>
+              @if (service.kind === "custom") {
+                <span class="custom-badge">Custom</span>
+              }
+            </div>
+            <span class="card-image">{{ service.image }}</span>
+          </div>
+          <span class="state-pill" [attr.data-state]="service.state">
+            <span class="status-dot" [attr.data-state]="service.state"></span>
+            {{ stateLabel(service) }}
+          </span>
+        </div>
+
+        <div class="card-connection">
+          <span class="connection-label">Connection</span>
+          <code [class.is-muted]="!service.url">
+            {{ service.url ?? "Start the service to create a local URL" }}
+          </code>
+        </div>
+
+        <div class="card-meta">
+          <span>Host port <strong>{{ service.port ?? service.hostPort }}</strong></span>
+          <span>Container <strong>{{ service.containerPort }}</strong></span>
+        </div>
+
+        @if (service.error) {
+          <p class="card-error">{{ service.error }}</p>
+        }
+
+        <div class="card-actions">
+          <button
+            type="button"
+            class="primary-btn"
+            [class.is-stop]="isRunning(service)"
+            [disabled]="store.isBusy(service.id)"
+            (click)="toggle(service)"
+          >
+            @if (store.isBusy(service.id)) {
+              <span class="button-spinner" aria-hidden="true"></span>
+            } @else if (isRunning(service)) {
+              <svg viewBox="0 0 20 20" fill="none" aria-hidden="true">
+                <rect x="6.2" y="6.2" width="7.6" height="7.6" rx="1.6" />
+              </svg>
+            } @else {
+              <svg viewBox="0 0 20 20" fill="none" aria-hidden="true">
+                <path d="M7.3 5.5l6.6 4.5-6.6 4.5V5.5z" />
+              </svg>
+            }
+            {{ actionLabel(service) }}
+          </button>
+          <button
+            type="button"
+            class="quiet-btn"
+            [disabled]="service.state !== 'running' || !service.url"
+            (click)="copy(service)"
+          >
+            <svg viewBox="0 0 20 20" fill="none" aria-hidden="true">
+              <rect x="7" y="7" width="8.5" height="8.5" rx="2" />
+              <path d="M12.5 7V5.7A1.7 1.7 0 0010.8 4H5.7A1.7 1.7 0 004 5.7v5.1A1.7 1.7 0 005.7 12.5H7" />
+            </svg>
+            Copy URL
+          </button>
+          <button
+            type="button"
+            class="icon-btn"
+            title="Configure services"
+            aria-label="Configure services"
+            (click)="openSettings()"
+          >
+            <svg viewBox="0 0 20 20" fill="none" aria-hidden="true">
+              <circle cx="10" cy="10" r="2.5" />
+              <path
+                d="M16 11.8l1.1.8-1.5 2.7-1.3-.5a6.4 6.4 0 01-1.6.9l-.2 1.4H9.4l-.2-1.4a6.4 6.4 0 01-1.6-.9l-1.3.5-1.5-2.7 1.1-.8a6.5 6.5 0 010-1.8l-1.1-.8 1.5-2.7 1.3.5a6.4 6.4 0 011.6-.9l.2-1.4h3.1l.2 1.4a6.4 6.4 0 011.6.9l1.3-.5 1.5 2.7-1.1.8a6.5 6.5 0 010 1.8z"
+              />
+            </svg>
+          </button>
+        </div>
+      </article>
+    }
+  </div>
+
+  <p class="page-hint">
+    Right-click any service card to copy its connection URL. Stop preserves
+    data; reset from Settings removes the managed volume.
+  </p>
+</section>

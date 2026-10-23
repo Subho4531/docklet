@@ -1,8 +1,8 @@
 {
   "$schema": "../gen/schemas/desktop-schema.json",
   "identifier": "default",
-  "description": "Capability for the Docklet popup",
-  "windows": ["main"],
+  "description": "Capability for the Docklet quick panel and main window",
+  "windows": ["popup", "main"],
   "permissions": [
     "core:default",
     "core:window:allow-start-dragging"

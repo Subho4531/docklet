@@ -1,0 +1,277 @@
+<section class="page settings-page">
+  <header class="page-header">
+    <div>
+      <span class="page-kicker">Configuration</span>
+      <h1>Settings</h1>
+      <p>
+        Tune local ports, protected data resets, and how Docklet behaves when
+        it runs in the background.
+      </p>
+    </div>
+    <div class="save-cluster">
+      @if (dirty()) {
+        <span class="dirty-note">Unsaved changes</span>
+      }
+      @if (dirty()) {
+        <button type="button" class="quiet-btn" (click)="discard()">
+          Discard
+        </button>
+      }
+      <button
+        type="button"
+        class="primary-btn save-button"
+        [disabled]="!dirty() || store.settingsSaving()"
+        (click)="save()"
+      >
+        @if (store.settingsSaving()) {
+          <span class="button-spinner" aria-hidden="true"></span>
+        }
+        Save changes
+      </button>
+    </div>
+  </header>
+
+  @if (draft(); as settings) {
+    <div class="settings-stack">
+      <section class="settings-section">
+        <header class="section-heading">
+          <div>
+            <h2>General</h2>
+            <p>Window and startup behavior.</p>
+          </div>
+        </header>
+
+        <div class="setting-rows">
+          <div class="setting-row">
+            <div class="setting-copy">
+              <h3>Launch at login</h3>
+              <p>Start Docklet hidden in the tray when you sign in to Windows.</p>
+            </div>
+            <button
+              type="button"
+              class="switch"
+              role="switch"
+              [class.is-on]="store.autostartEnabled()"
+              [attr.aria-checked]="store.autostartEnabled()"
+              [disabled]="!store.autostartAvailable() || store.autostartBusy()"
+              aria-label="Launch Docklet at login"
+              (click)="store.toggleAutostart()"
+            >
+              <span class="switch-knob"></span>
+            </button>
+          </div>
+
+          <div class="setting-row">
+            <div class="setting-copy">
+              <h3>Hide quick panel when it loses focus</h3>
+              <p>
+                The tray popup dismisses when you click elsewhere. Disable this
+                if you prefer to close it manually.
+              </p>
+            </div>
+            <button
+              type="button"
+              class="switch"
+              role="switch"
+              [class.is-on]="settings.hidePopupOnBlur"
+              [attr.aria-checked]="settings.hidePopupOnBlur"
+              aria-label="Hide quick panel when it loses focus"
+              (click)="toggleHidePopup()"
+            >
+              <span class="switch-knob"></span>
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <section class="settings-section">
+        <header class="section-heading">
+          <div>
+            <h2>Built-in services</h2>
+            <p>
+              Local-only ports. A changed port applies the next time the
+              service starts.
+            </p>
+          </div>
+        </header>
+
+        <div class="service-settings-list">
+          @for (service of builtinServices(); track service.id) {
+            <article class="service-setting">
+              <div class="service-setting-main">
+                <span class="row-icon">
+                  <app-service-icon [name]="service.icon" />
+                </span>
+                <div class="row-copy">
+                  <div class="row-title">
+                    <h3>{{ service.name }}</h3>
+                    <span class="mini-state" [attr.data-state]="service.state">
+                      <span
+                        class="status-dot"
+                        [attr.data-state]="service.state"
+                        aria-hidden="true"
+                      ></span>
+                      {{ stateLabel(service) }}
+                    </span>
+                  </div>
+                  <span class="row-image">{{ service.image }}</span>
+                  @if (service.url) {
+                    <code class="row-url">{{ service.url }}</code>
+                  }
+                  @if (portChanged(service)) {
+                    <span class="restart-note">
+                      Restart this service to use port {{ portFor(service) }}
+                    </span>
+                  }
+                </div>
+              </div>
+
+              <div class="service-setting-actions">
+                <label class="port-field">
+                  <span>Host port</span>
+                  <input
+                    class="text-input port-input"
+                    name="port-{{ service.id }}"
+                    type="number"
+                    min="1"
+                    max="65535"
+                    [ngModel]="portFor(service)"
+                    (ngModelChange)="setPort(service.id, $event)"
+                  />
+                </label>
+                <button
+                  type="button"
+                  class="quiet-btn is-danger reset-button"
+                  [disabled]="!canReset(service)"
+                  (click)="requestReset(service)"
+                >
+                  Reset data
+                </button>
+              </div>
+            </article>
+          }
+        </div>
+      </section>
+
+      <section class="settings-section">
+        <header class="section-heading custom-heading">
+          <div>
+            <h2>Custom services</h2>
+            <p>
+              One image, one local port, and an optional named volume. No
+              Compose, bind mounts, or privileged containers.
+            </p>
+          </div>
+          <button type="button" class="quiet-btn add-service" (click)="openAddCustom()">
+            <svg viewBox="0 0 20 20" fill="none" aria-hidden="true">
+              <path d="M10 4.5v11M4.5 10h11" />
+            </svg>
+            Add service
+          </button>
+        </header>
+
+        @if (customRows().length === 0) {
+          <div class="empty-custom">
+            <span class="empty-icon">
+              <app-service-icon name="docker" />
+            </span>
+            <div>
+              <h3>No custom services yet</h3>
+              <p>
+                Add any single-container image that publishes one port on
+                127.0.0.1.
+              </p>
+            </div>
+          </div>
+        } @else {
+          <div class="custom-settings-list">
+            @for (row of customRows(); track row.custom.id) {
+              <article class="custom-setting">
+                <span class="row-icon">
+                  <app-service-icon name="docker" />
+                </span>
+                <div class="row-copy">
+                  <div class="row-title">
+                    <h3>{{ row.custom.name }}</h3>
+                    <span
+                      class="mini-state"
+                      [attr.data-state]="row.status?.state ?? 'missing'"
+                    >
+                      <span
+                        class="status-dot"
+                        [attr.data-state]="row.status?.state ?? 'missing'"
+                        aria-hidden="true"
+                      ></span>
+                      {{ stateLabel(row.status) }}
+                    </span>
+                  </div>
+                  <span class="row-image">{{ row.custom.image }}</span>
+                  <code class="row-url">{{
+                    customPortLabel(row.custom, row.status)
+                  }}</code>
+                </div>
+                <div class="custom-actions">
+                  <button
+                    type="button"
+                    class="quiet-btn"
+                    (click)="openEditCustom(row.custom)"
+                  >
+                    Edit
+                  </button>
+                  <button
+                    type="button"
+                    class="quiet-btn is-danger"
+                    [disabled]="!row.status || store.isBusy(row.custom.id)"
+                    (click)="requestRemove(row.status)"
+                  >
+                    Remove
+                  </button>
+                </div>
+              </article>
+            }
+          </div>
+        }
+      </section>
+
+      <p class="settings-footnote">
+        Docklet only manages containers and volumes carrying its own
+        <code>com.docklet.managed=true</code> label. Existing Redis resources
+        keep their original names.
+      </p>
+    </div>
+  } @else {
+    <div class="settings-loading">
+      <span class="spinner" aria-hidden="true"></span>
+      <span>Loading settings</span>
+    </div>
+  }
+</section>
+
+@if (pendingReset(); as service) {
+  <app-confirm-dialog
+    [title]="'Reset ' + service.name + ' data?'"
+    message="This deletes the managed container and its named data volume, then recreates the service with a clean volume. This cannot be undone."
+    confirmLabel="Reset & restart"
+    (confirmed)="confirmReset()"
+    (cancelled)="pendingReset.set(null)"
+  />
+}
+
+@if (pendingRemove(); as service) {
+  <app-confirm-dialog
+    [title]="'Remove ' + service.name + '?'"
+    message="This deletes the custom service, its managed container, and any Docklet-managed volume. Other Docker resources are untouched."
+    confirmLabel="Remove service"
+    (confirmed)="confirmRemove()"
+    (cancelled)="pendingRemove.set(null)"
+  />
+}
+
+@if (customDialogOpen()) {
+  <app-custom-service-dialog
+    [service]="editingCustom()"
+    [existingIds]="existingCustomIds()"
+    (saved)="saveCustom($event)"
+    (cancelled)="closeCustomDialog()"
+  />
+}

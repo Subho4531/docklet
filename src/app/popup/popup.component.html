@@ -1,0 +1,139 @@
+<div class="popup-shell">
+  <div class="ambient ambient-top" aria-hidden="true"></div>
+  <div class="ambient ambient-bottom" aria-hidden="true"></div>
+
+  <header class="popup-titlebar">
+    <div class="brand" data-tauri-drag-region>
+      <img
+        class="brand-mark"
+        src="assets/brand/docklet.png"
+        alt=""
+        aria-hidden="true"
+        draggable="false"
+      />
+      <span class="brand-copy" data-tauri-drag-region>
+        <span class="brand-name">Docklet</span>
+        <span class="brand-subtitle">{{ subtitle() }}</span>
+      </span>
+    </div>
+    <span class="drag-space" data-tauri-drag-region aria-hidden="true"></span>
+    <button
+      type="button"
+      class="icon-button"
+      aria-label="Open Docklet settings"
+      title="Open settings"
+      (click)="openSettings()"
+    >
+      <svg viewBox="0 0 20 20" fill="none" aria-hidden="true">
+        <circle cx="10" cy="10" r="2.6" />
+        <path
+          d="M16.1 11.8l1.2.9-1.6 2.8-1.4-.5a6.7 6.7 0 01-1.6.9l-.2 1.5h-3.2l-.2-1.5a6.7 6.7 0 01-1.6-.9l-1.4.5-1.6-2.8 1.2-.9a6.9 6.9 0 010-1.9l-1.2-.9L6.1 5l1.4.5a6.7 6.7 0 011.6-.9l.2-1.5h3.2l.2 1.5a6.7 6.7 0 011.6.9l1.4-.5 1.6 2.8-1.2.9a6.9 6.9 0 010 1.9z"
+        />
+      </svg>
+    </button>
+    <button
+      type="button"
+      class="icon-button"
+      aria-label="Hide Docklet"
+      title="Hide"
+      (click)="store.hidePopup()"
+    >
+      <svg viewBox="0 0 20 20" fill="none" aria-hidden="true">
+        <path d="M5.5 5.5l9 9M14.5 5.5l-9 9" />
+      </svg>
+    </button>
+  </header>
+
+  <main class="popup-main">
+    <div class="services-heading">
+      <span>Services</span>
+      <span class="services-hint">Click to toggle · right-click to copy</span>
+    </div>
+
+    <div class="service-scroll">
+      @if (store.loading() && !store.snapshot()) {
+        <div class="popup-loading">
+          <span class="spinner" aria-hidden="true"></span>
+          <span>Checking Docker</span>
+        </div>
+      } @else {
+        <div class="service-grid">
+          @for (service of store.services(); track service.id) {
+            <button
+              type="button"
+              class="service-tile"
+              role="switch"
+              [class.is-on]="isOn(service)"
+              [class.is-busy]="store.isBusy(service.id)"
+              [attr.data-state]="service.state"
+              [attr.aria-checked]="isOn(service)"
+              [attr.aria-busy]="store.isBusy(service.id)"
+              [attr.aria-label]="
+                service.name +
+                ' — ' +
+                stateLabel(service) +
+                '. Left-click to toggle, right-click to copy.'
+              "
+              [title]="tileTitle(service)"
+              [disabled]="store.isBusy(service.id)"
+              (click)="toggle(service)"
+              (contextmenu)="copy($event, service)"
+              (keydown)="onTileKeydown($event, service)"
+            >
+              <span class="tile-head">
+                <span class="tile-icon">
+                  <app-service-icon [name]="service.icon" />
+                  @if (store.isBusy(service.id)) {
+                    <span class="tile-spinner" aria-hidden="true"></span>
+                  }
+                </span>
+                <span
+                  class="switch"
+                  [class.is-on]="isOn(service)"
+                  aria-hidden="true"
+                >
+                  <span class="switch-knob"></span>
+                </span>
+              </span>
+              <span class="tile-name">{{ service.name }}</span>
+              <span class="tile-state">
+                <span
+                  class="status-dot"
+                  [attr.data-state]="service.state"
+                  aria-hidden="true"
+                ></span>
+                {{ stateLabel(service) }}
+              </span>
+            </button>
+          }
+        </div>
+      }
+    </div>
+  </main>
+
+  <footer class="popup-footer">
+    <span
+      class="engine-state"
+      [class.is-online]="store.dockerAvailable()"
+      [attr.aria-label]="
+        store.dockerAvailable() ? 'Docker is ready' : 'Docker is offline'
+      "
+    >
+      <span class="engine-dot" aria-hidden="true"></span>
+      <span>{{ store.dockerAvailable() ? "Docker ready" : "Docker offline" }}</span>
+    </span>
+    <button
+      type="button"
+      class="open-app-button"
+      [disabled]="!store.dockerAvailable() && store.services().length === 0"
+      (click)="openApp()"
+    >
+      Open Docklet
+      <svg viewBox="0 0 20 20" fill="none" aria-hidden="true">
+        <path d="M7.5 5.5L12 10l-4.5 4.5" />
+      </svg>
+    </button>
+  </footer>
+
+  <app-toast [compact]="true" />
+</div>

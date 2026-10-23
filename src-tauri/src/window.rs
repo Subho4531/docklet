@@ -1,9 +1,10 @@
 use std::sync::atomic::Ordering;
 
-use tauri::{AppHandle, Manager, PhysicalPosition};
+use tauri::{AppHandle, Emitter, Manager, PhysicalPosition};
 
 use crate::state::AppState;
 
+pub const POPUP_WINDOW: &str = "popup";
 pub const MAIN_WINDOW: &str = "main";
 
 const POPUP_GAP: i32 = 10;
@@ -26,7 +27,7 @@ pub fn cancel_pending_hide(app: &AppHandle) {
 pub fn show_popup(app: &AppHandle, anchor: Option<PhysicalPosition<f64>>) {
     cancel_pending_hide(app);
 
-    let Some(window) = app.get_webview_window(MAIN_WINDOW) else {
+    let Some(window) = app.get_webview_window(POPUP_WINDOW) else {
         return;
     };
 
@@ -51,7 +52,7 @@ pub fn toggle_popup(app: &AppHandle, anchor: PhysicalPosition<f64>) {
     remember_anchor(app, anchor);
     cancel_pending_hide(app);
 
-    let Some(window) = app.get_webview_window(MAIN_WINDOW) else {
+    let Some(window) = app.get_webview_window(POPUP_WINDOW) else {
         return;
     };
 
@@ -64,9 +65,26 @@ pub fn toggle_popup(app: &AppHandle, anchor: PhysicalPosition<f64>) {
 
 pub fn hide_popup(app: &AppHandle) {
     cancel_pending_hide(app);
-    if let Some(window) = app.get_webview_window(MAIN_WINDOW) {
+    if let Some(window) = app.get_webview_window(POPUP_WINDOW) {
         let _ = window.hide();
     }
+}
+
+pub fn show_main(app: &AppHandle, page: &str) {
+    cancel_pending_hide(app);
+    hide_popup(app);
+
+    let Some(window) = app.get_webview_window(MAIN_WINDOW) else {
+        return;
+    };
+
+    if let Some(state) = app.try_state::<AppState>() {
+        state.set_pending_main_page(page);
+    }
+    let _ = window.unminimize();
+    let _ = window.show();
+    let _ = window.set_focus();
+    let _ = app.emit("open-main-page", page.to_string());
 }
 
 #[cfg(not(debug_assertions))]
@@ -86,8 +104,11 @@ pub fn schedule_auto_hide(app: &AppHandle) {
         if state.focus_generation.load(Ordering::SeqCst) != generation {
             return;
         }
+        if !state.settings().hide_popup_on_blur {
+            return;
+        }
 
-        let Some(window) = app.get_webview_window(MAIN_WINDOW) else {
+        let Some(window) = app.get_webview_window(POPUP_WINDOW) else {
             return;
         };
         if window.is_visible().unwrap_or(false) && !window.is_focused().unwrap_or(false) {

@@ -12,8 +12,8 @@
   "app": {
     "windows": [
       {
-        "label": "main",
-        "title": "Docklet",
+        "label": "popup",
+        "title": "Docklet Quick Panel",
         "width": 380,
         "height": 410,
         "resizable": false,
@@ -27,11 +27,32 @@
         "skipTaskbar": true,
         "shadow": false,
         "center": false,
+        "theme": "Dark",
         "windowEffects": {
           "effects": ["acrylic"],
           "state": "active",
           "radius": 14
         }
+      },
+      {
+        "label": "main",
+        "title": "Docklet",
+        "width": 900,
+        "height": 620,
+        "minWidth": 760,
+        "minHeight": 540,
+        "resizable": true,
+        "maximizable": true,
+        "minimizable": true,
+        "fullscreen": false,
+        "decorations": true,
+        "transparent": false,
+        "visible": false,
+        "alwaysOnTop": false,
+        "skipTaskbar": false,
+        "center": true,
+        "theme": "Dark",
+        "backgroundColor": "#0c0d12"
       }
     ],
     "security": {
@@ -43,6 +64,7 @@
     "targets": "all",
     "icon": [
       "icons/32x32.png",
+      "icons/64x64.png",
       "icons/128x128.png",
       "icons/128x128@2x.png",
       "icons/icon.icns",

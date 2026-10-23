@@ -1,0 +1,163 @@
+<div class="dialog-backdrop" (click)="cancelled.emit()">
+  <section
+    class="dialog-card custom-dialog"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="custom-dialog-title"
+    (click)="$event.stopPropagation()"
+  >
+    <header class="dialog-header">
+      <span class="dialog-icon">
+        <img src="assets/services/docker.svg" alt="" aria-hidden="true" />
+      </span>
+      <div class="dialog-heading">
+        <span class="dialog-kicker">Docker service</span>
+        <h2 id="custom-dialog-title">
+          {{ editing() ? "Edit custom service" : "Add custom service" }}
+        </h2>
+        <p>
+          Docklet creates one managed container, an optional named volume, and
+          a local-only port binding.
+        </p>
+      </div>
+      <button
+        type="button"
+        class="icon-btn"
+        aria-label="Close custom service dialog"
+        (click)="cancelled.emit()"
+      >
+        <svg viewBox="0 0 20 20" fill="none" aria-hidden="true">
+          <path d="M5.5 5.5l9 9M14.5 5.5l-9 9" />
+        </svg>
+      </button>
+    </header>
+
+    <form class="custom-form" (ngSubmit)="save()">
+      <div class="form-grid">
+        <label class="field">
+          <span class="field-label">Name</span>
+          <input
+            class="text-input"
+            name="name"
+            type="text"
+            autofocus
+            maxlength="48"
+            placeholder="HTTP Echo"
+            [ngModel]="form().name"
+            (ngModelChange)="patch('name', $event)"
+          />
+        </label>
+
+        <label class="field">
+          <span class="field-label">Docker image</span>
+          <input
+            class="text-input"
+            name="image"
+            type="text"
+            maxlength="200"
+            placeholder="hashicorp/http-echo:1.0"
+            [ngModel]="form().image"
+            (ngModelChange)="patch('image', $event)"
+          />
+        </label>
+
+        <label class="field">
+          <span class="field-label">Host port</span>
+          <input
+            class="text-input"
+            name="hostPort"
+            type="number"
+            min="1"
+            max="65535"
+            [ngModel]="form().hostPort"
+            (ngModelChange)="patch('hostPort', $event)"
+          />
+          <span class="field-hint">Bound to 127.0.0.1 only</span>
+        </label>
+
+        <label class="field">
+          <span class="field-label">Container port</span>
+          <input
+            class="text-input"
+            name="containerPort"
+            type="number"
+            min="1"
+            max="65535"
+            [ngModel]="form().containerPort"
+            (ngModelChange)="patch('containerPort', $event)"
+          />
+        </label>
+
+        <label class="field field-wide">
+          <span class="field-label">Connection URL template</span>
+          <input
+            class="text-input mono-input"
+            name="urlTemplate"
+            type="text"
+            maxlength="300"
+            placeholder="http://127.0.0.1:&#123;port&#125;"
+            [ngModel]="form().urlTemplate"
+            (ngModelChange)="patch('urlTemplate', $event)"
+          />
+          <span class="field-hint">
+            Use &#123;port&#125; where the mapped local port should appear.
+          </span>
+        </label>
+
+        <label class="field">
+          <span class="field-label">Named volume path <em>optional</em></span>
+          <input
+            class="text-input mono-input"
+            name="volumePath"
+            type="text"
+            placeholder="/var/lib/service"
+            [ngModel]="form().volumePath"
+            (ngModelChange)="patch('volumePath', $event)"
+          />
+          <span class="field-hint">Leave empty for no persistent volume</span>
+        </label>
+
+        <label class="field">
+          <span class="field-label">Health command <em>optional</em></span>
+          <input
+            class="text-input mono-input"
+            name="healthCommand"
+            type="text"
+            placeholder="wget -qO- http://127.0.0.1:80"
+            [ngModel]="form().healthCommand"
+            (ngModelChange)="patch('healthCommand', $event)"
+          />
+          <span class="field-hint">
+            Runs inside the container; empty uses a TCP check.
+          </span>
+        </label>
+
+        <label class="field field-wide">
+          <span class="field-label">Environment variables <em>optional</em></span>
+          <textarea
+            class="text-area mono-input"
+            name="envText"
+            rows="3"
+            placeholder="ECHO_TEXT=hello"
+            [ngModel]="form().envText"
+            (ngModelChange)="patch('envText', $event)"
+          ></textarea>
+          <span class="field-hint">One KEY=value pair per line.</span>
+        </label>
+      </div>
+
+      @if (error(); as message) {
+        <p class="form-error" role="alert">{{ message }}</p>
+      }
+
+      <div class="dialog-actions">
+        <button type="button" class="quiet-btn" (click)="cancelled.emit()">
+          Cancel
+        </button>
+        <button type="submit" class="primary-btn">
+          {{ editing() ? "Save service" : "Add service" }}
+        </button>
+      </div>
+    </form>
+  </section>
+</div>
