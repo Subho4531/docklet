@@ -17,5 +17,5 @@ CORS rules on `file://` pages.
 
 ## Release links
 
-The download buttons point at the `v0.1.0` release assets on GitHub. Update the
+The download buttons point at the `v0.2.0` release assets on GitHub. Update the
 versioned URLs in `index.html` when a new release is published.
