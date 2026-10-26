@@ -101,6 +101,7 @@ Build output is written to `src-tauri/target/release/bundle/`.
 - `src-tauri/src/` — Rust commands, Docker CLI wrapper, lifecycle management, tray, and window shaping
 - `src-tauri/capabilities/` — explicit Tauri permissions for the popup and main windows
 - `src/assets/services/` — service icons
+- `website/` — static launch and download site
 
 ## Status
 

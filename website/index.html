@@ -1,0 +1,761 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Docklet: Local services, without the terminal.</title>
+    <meta
+      name="description"
+      content="Docklet is a Windows tray utility for running Redis, PostgreSQL, MySQL, MongoDB, custom Docker services, and local llama.cpp models without the terminal."
+    />
+    <meta name="theme-color" content="#fbfbf8" />
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="Docklet: Local services, without the terminal." />
+    <meta
+      property="og:description"
+      content="Redis, Postgres, local AI models, and any Docker image, one click from the Windows tray."
+    />
+    <link rel="icon" type="image/png" href="assets/docklet-icon.png" />
+    <link
+      rel="preload"
+      href="assets/fonts/InterVariable.woff2"
+      as="font"
+      type="font/woff2"
+      crossorigin
+    />
+    <link
+      rel="preload"
+      href="assets/fonts/JetBrainsMono-Regular.woff2"
+      as="font"
+      type="font/woff2"
+      crossorigin
+    />
+    <link rel="stylesheet" href="styles.css" />
+    <script>
+      document.documentElement.classList.add("js");
+    </script>
+  </head>
+  <body>
+    <a class="skip-link" href="#main">Skip to content</a>
+
+    <header class="nav">
+      <div class="wrap nav-inner">
+        <a class="brand" href="#top" aria-label="Docklet home">
+          <img
+            class="brand-icon"
+            src="assets/docklet-icon.png"
+            width="30"
+            height="30"
+            alt=""
+            draggable="false"
+          />
+          <span class="brand-name">Docklet</span>
+          <span class="brand-version">0.1.0</span>
+        </a>
+
+        <nav class="nav-links" aria-label="Main navigation">
+          <a href="#features">Features</a>
+          <a href="#services">Services</a>
+          <a href="#local-ai">Local AI</a>
+          <a href="#download">Download</a>
+        </nav>
+
+        <div class="nav-actions">
+          <a
+            class="nav-github"
+            href="https://github.com/Subho4531/docklet"
+            target="_blank"
+            rel="noreferrer"
+          >
+            GitHub <span aria-hidden="true">↗</span>
+          </a>
+          <a class="btn btn-primary btn-small" href="#download">Download</a>
+        </div>
+      </div>
+    </header>
+
+    <main id="main">
+      <section class="hero" id="top">
+        <div class="wrap">
+          <div class="hero-panel">
+            <div class="hero-copy">
+              <p class="eyebrow">
+                <span class="live-dot" aria-hidden="true"></span>
+                Docklet 0.1.0 · Windows-first
+              </p>
+              <h1>Local services,<br />zero terminal.</h1>
+              <p class="hero-lede">
+                Redis, Postgres, local AI models, and any Docker image, one click
+                from the Windows tray.
+              </p>
+              <div class="hero-actions">
+                <a
+                  class="btn btn-primary"
+                  href="https://github.com/Subho4531/docklet/releases/download/v0.1.0/Docklet_0.1.0_x64-setup.exe"
+                >
+                  Download for Windows
+                </a>
+                <a class="btn btn-ghost" href="#features">
+                  See what’s inside <span aria-hidden="true">↓</span>
+                </a>
+              </div>
+            </div>
+
+            <div class="hero-visual">
+              <div class="preview-kicker">
+                <span class="live-dot" aria-hidden="true"></span>
+                Live tray preview
+              </div>
+
+              <div class="quick-panel" aria-label="Interactive Docklet tray panel preview">
+                <div class="qp-head">
+                  <div class="qp-brand">
+                    <img
+                      src="assets/docklet-icon.png"
+                      width="32"
+                      height="32"
+                      alt=""
+                      draggable="false"
+                    />
+                    <div>
+                      <strong>Docklet</strong>
+                      <span id="running-count" aria-live="polite">2 of 4 running</span>
+                    </div>
+                  </div>
+                  <button
+                    class="qp-close"
+                    type="button"
+                    aria-label="Close tray panel preview"
+                    data-preview-close
+                  >
+                    ×
+                  </button>
+                </div>
+
+                <div class="qp-section-head">
+                  <span>Services</span>
+                  <span>Click to toggle</span>
+                </div>
+
+                <div class="qp-grid">
+                  <button
+                    class="service-switch is-on"
+                    type="button"
+                    role="switch"
+                    aria-checked="true"
+                    aria-label="Redis"
+                    data-service="Redis"
+                    data-port="6379"
+                  >
+                    <span class="service-top">
+                      <span class="service-icon">
+                        <img src="assets/services/redis.svg" width="22" height="22" alt="" />
+                      </span>
+                      <span class="switch" aria-hidden="true"><span></span></span>
+                    </span>
+                    <span class="service-name">Redis</span>
+                    <span class="service-status">
+                      <span class="status-dot" aria-hidden="true"></span>
+                      <span data-status>Port 6379</span>
+                    </span>
+                  </button>
+
+                  <button
+                    class="service-switch"
+                    type="button"
+                    role="switch"
+                    aria-checked="false"
+                    aria-label="PostgreSQL"
+                    data-service="PostgreSQL"
+                    data-port="5432"
+                  >
+                    <span class="service-top">
+                      <span class="service-icon">
+                        <img
+                          src="assets/services/postgresql.svg"
+                          width="22"
+                          height="22"
+                          alt=""
+                        />
+                      </span>
+                      <span class="switch" aria-hidden="true"><span></span></span>
+                    </span>
+                    <span class="service-name">PostgreSQL</span>
+                    <span class="service-status">
+                      <span class="status-dot" aria-hidden="true"></span>
+                      <span data-status>Stopped</span>
+                    </span>
+                  </button>
+
+                  <button
+                    class="service-switch"
+                    type="button"
+                    role="switch"
+                    aria-checked="false"
+                    aria-label="MySQL"
+                    data-service="MySQL"
+                    data-port="3306"
+                  >
+                    <span class="service-top">
+                      <span class="service-icon">
+                        <img src="assets/services/mysql.svg" width="22" height="22" alt="" />
+                      </span>
+                      <span class="switch" aria-hidden="true"><span></span></span>
+                    </span>
+                    <span class="service-name">MySQL</span>
+                    <span class="service-status">
+                      <span class="status-dot" aria-hidden="true"></span>
+                      <span data-status>Stopped</span>
+                    </span>
+                  </button>
+
+                  <button
+                    class="service-switch is-on"
+                    type="button"
+                    role="switch"
+                    aria-checked="true"
+                    aria-label="MongoDB"
+                    data-service="MongoDB"
+                    data-port="27017"
+                  >
+                    <span class="service-top">
+                      <span class="service-icon">
+                        <img src="assets/services/mongodb.svg" width="22" height="22" alt="" />
+                      </span>
+                      <span class="switch" aria-hidden="true"><span></span></span>
+                    </span>
+                    <span class="service-name">MongoDB</span>
+                    <span class="service-status">
+                      <span class="status-dot" aria-hidden="true"></span>
+                      <span data-status>Port 27017</span>
+                    </span>
+                  </button>
+                </div>
+
+                <div class="qp-footer">
+                  <span class="qp-ready">
+                    <span class="live-dot" aria-hidden="true"></span>
+                    Docker ready
+                  </span>
+                  <a href="#download">Open Docklet <span aria-hidden="true">→</span></a>
+                </div>
+              </div>
+
+              <p class="preview-note">
+                Toggle a service. The preview updates, just like the tray panel.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <div class="stack-strip">
+        <div class="wrap stack-inner">
+          <span class="stack-label">Under the hood</span>
+          <div class="stack-chips" aria-label="Supported stack">
+            <span>Docker Desktop</span>
+            <span>Redis 8</span>
+            <span>PostgreSQL</span>
+            <span>MySQL</span>
+            <span>MongoDB</span>
+            <span>llama.cpp</span>
+            <span>Windows 10 / 11</span>
+          </div>
+        </div>
+      </div>
+
+      <section class="section" id="features">
+        <div class="wrap">
+          <div class="section-intro">
+            <h2>Less terminal.<br />More local.</h2>
+            <p>
+              Docklet is built around one idea: if a service is only for your
+              machine, starting it should feel like flipping a switch.
+            </p>
+          </div>
+
+          <div class="feature-list">
+            <article class="feature-row" data-reveal>
+              <span class="row-index">01</span>
+              <div class="row-copy">
+                <h3>Tray-first control</h3>
+                <p>
+                  Open the panel, start what you need, copy the URL, close it
+                  again. The window disappears. The service keeps running.
+                </p>
+                <div class="tags">
+                  <span>Tray panel</span>
+                  <span>One click</span>
+                  <span>Copy URL</span>
+                </div>
+              </div>
+              <span class="row-mark" aria-hidden="true">↘</span>
+            </article>
+
+            <article class="feature-row" data-reveal style="--reveal-delay: 1">
+              <span class="row-index">02</span>
+              <div class="row-copy">
+                <h3>Managed Docker</h3>
+                <p>
+                  One container per service, one localhost port, one named
+                  volume. Built-ins and your own images, without a Compose file.
+                </p>
+                <div class="tags">
+                  <span>Named volumes</span>
+                  <span>Localhost only</span>
+                  <span>Safe cleanup</span>
+                </div>
+              </div>
+              <span class="row-mark" aria-hidden="true">↘</span>
+            </article>
+
+            <article class="feature-row" data-reveal style="--reveal-delay: 2">
+              <span class="row-index">03</span>
+              <div class="row-copy">
+                <h3>Private local AI</h3>
+                <p>
+                  Install a GGUF model, start llama.cpp, and point any
+                  OpenAI-compatible client at your machine. No cloud endpoint.
+                </p>
+                <div class="tags">
+                  <span>OpenAI-compatible</span>
+                  <span>GGUF</span>
+                  <span>On demand</span>
+                </div>
+              </div>
+              <span class="row-mark" aria-hidden="true">↘</span>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <section class="section" id="services">
+        <div class="wrap">
+          <div class="section-intro">
+            <h2>Your usual services,<br />already at home.</h2>
+            <p>
+              Start with a built-in. Add a curated template. Or search Docker
+              Hub for the exact image you had in mind.
+            </p>
+          </div>
+
+          <div class="service-grid">
+            <article class="service-tile" data-reveal>
+              <div class="tile-top">
+                <span class="tile-icon">
+                  <img src="assets/services/redis.svg" width="28" height="28" alt="" />
+                </span>
+                <span class="tile-index">01</span>
+              </div>
+              <div class="tile-copy">
+                <h3>Redis</h3>
+                <p>redis:8-alpine</p>
+              </div>
+              <span class="tile-tag">Built in</span>
+            </article>
+
+            <article class="service-tile" data-reveal style="--reveal-delay: 1">
+              <div class="tile-top">
+                <span class="tile-icon">
+                  <img
+                    src="assets/services/postgresql.svg"
+                    width="28"
+                    height="28"
+                    alt=""
+                  />
+                </span>
+                <span class="tile-index">02</span>
+              </div>
+              <div class="tile-copy">
+                <h3>PostgreSQL</h3>
+                <p>postgres:17-alpine</p>
+              </div>
+              <span class="tile-tag">Built in</span>
+            </article>
+
+            <article class="service-tile" data-reveal style="--reveal-delay: 2">
+              <div class="tile-top">
+                <span class="tile-icon">
+                  <img src="assets/services/mysql.svg" width="28" height="28" alt="" />
+                </span>
+                <span class="tile-index">03</span>
+              </div>
+              <div class="tile-copy">
+                <h3>MySQL</h3>
+                <p>mysql:8.4</p>
+              </div>
+              <span class="tile-tag">Built in</span>
+            </article>
+
+            <article class="service-tile" data-reveal style="--reveal-delay: 3">
+              <div class="tile-top">
+                <span class="tile-icon">
+                  <img src="assets/services/mongodb.svg" width="28" height="28" alt="" />
+                </span>
+                <span class="tile-index">04</span>
+              </div>
+              <div class="tile-copy">
+                <h3>MongoDB</h3>
+                <p>mongo:7</p>
+              </div>
+              <span class="tile-tag">Built in</span>
+            </article>
+
+            <article class="service-tile" data-reveal style="--reveal-delay: 4">
+              <div class="tile-top">
+                <span class="tile-icon">
+                  <img src="assets/services/nginx.svg" width="28" height="28" alt="" />
+                </span>
+                <span class="tile-index">05</span>
+              </div>
+              <div class="tile-copy">
+                <h3>Nginx</h3>
+                <p>nginx:alpine</p>
+              </div>
+              <span class="tile-tag tile-tag-muted">Library</span>
+            </article>
+
+            <article class="service-tile" data-reveal style="--reveal-delay: 5">
+              <div class="tile-top">
+                <span class="tile-icon">
+                  <img src="assets/services/grafana.svg" width="28" height="28" alt="" />
+                </span>
+                <span class="tile-index">06</span>
+              </div>
+              <div class="tile-copy">
+                <h3>Grafana</h3>
+                <p>grafana/grafana:latest</p>
+              </div>
+              <span class="tile-tag tile-tag-muted">Library</span>
+            </article>
+
+            <article class="service-tile" data-reveal style="--reveal-delay: 6">
+              <div class="tile-top">
+                <span class="tile-icon">
+                  <img src="assets/services/rabbitmq.svg" width="28" height="28" alt="" />
+                </span>
+                <span class="tile-index">07</span>
+              </div>
+              <div class="tile-copy">
+                <h3>RabbitMQ</h3>
+                <p>rabbitmq:4-management</p>
+              </div>
+              <span class="tile-tag tile-tag-muted">Library</span>
+            </article>
+
+            <a
+              class="service-tile service-tile-dark"
+              href="https://github.com/Subho4531/docklet#custom-service-limits"
+              target="_blank"
+              rel="noreferrer"
+              data-reveal
+              style="--reveal-delay: 7"
+            >
+              <div class="tile-top">
+                <span class="tile-icon">
+                  <img src="assets/services/docker.svg" width="28" height="28" alt="" />
+                </span>
+                <span class="tile-index">08</span>
+              </div>
+              <div class="tile-copy">
+                <h3>Docker Hub</h3>
+                <p>Search any public image</p>
+              </div>
+              <span class="tile-tag tile-tag-light">Browse ↗</span>
+            </a>
+          </div>
+
+          <div class="services-foot">
+            <p>
+              Also in the Library: Adminer, MariaDB, Memcached, Jaeger, Uptime
+              Kuma, Meilisearch, and n8n.
+            </p>
+            <p class="safety-note">
+              <span class="live-dot" aria-hidden="true"></span>
+              Docklet only removes resources it created.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <section class="section section-ai" id="local-ai">
+        <div class="wrap ai-grid">
+          <div class="ai-copy">
+            <h2>Your own model.<br />Your own machine.</h2>
+            <p>
+              A small, private inference setup for everyday work. Download a
+              model once, serve it locally, and keep every prompt on your PC.
+            </p>
+
+            <ol class="mini-steps">
+              <li>
+                <span>01</span>
+                <div>
+                  <strong>Pick a GGUF</strong>
+                  <p>Use the curated catalog or add a Hugging Face model.</p>
+                </div>
+              </li>
+              <li>
+                <span>02</span>
+                <div>
+                  <strong>Press Start</strong>
+                  <p>Docklet downloads llama.cpp and launches one model.</p>
+                </div>
+              </li>
+              <li>
+                <span>03</span>
+                <div>
+                  <strong>Point your client</strong>
+                  <p>Use the local OpenAI-compatible endpoint with bearer auth.</p>
+                </div>
+              </li>
+            </ol>
+
+            <p class="ai-note">
+              CPU-only engine, pinned to llama.cpp b11838. One model serves at a
+              time.
+            </p>
+          </div>
+
+          <div class="endpoint-card" data-reveal>
+            <div class="endpoint-head">
+              <span>Local endpoint</span>
+              <span class="ready-badge">
+                <span class="live-dot" aria-hidden="true"></span>
+                Ready
+              </span>
+            </div>
+
+            <div class="endpoint-url-row">
+              <code id="endpoint-url">http://127.0.0.1:11435/v1</code>
+              <button
+                class="copy-btn"
+                type="button"
+                data-copy="http://127.0.0.1:11435/v1"
+              >
+                Copy
+              </button>
+            </div>
+
+            <pre class="code-sample"><code><span class="code-muted"># any OpenAI-compatible client works</span>
+<span class="code-accent">curl</span> http://127.0.0.1:11435/v1/chat/completions \
+  -H <span class="code-string">"Authorization: Bearer $DOCKLET_KEY"</span> \
+  -d <span class="code-string">'{"model":"llama-3.2-1b","messages":[{"role":"user","content":"Hi"}]}'</span></code></pre>
+
+            <div class="endpoint-meta">
+              <span>llama.cpp b11838</span>
+              <span>GGUF · Q4_K_M</span>
+              <span>Bearer auth</span>
+            </div>
+
+            <div class="model-strip">
+              <div>
+                <span class="model-dot" aria-hidden="true"></span>
+                <strong>Llama 3.2 1B</strong>
+                <span>770 MB</span>
+              </div>
+              <span class="model-status">Serving</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="section" id="download">
+        <div class="wrap">
+          <div class="download-box" data-reveal>
+            <div class="download-copy">
+              <p class="download-kicker">Windows 10 / 11 · x64 · v0.1.0</p>
+              <h2>Put it in the tray.</h2>
+              <p>
+                Docklet installs like a normal Windows app. No account, no
+                separate daemon, no terminal required.
+              </p>
+
+              <div class="download-actions">
+                <a
+                  class="btn btn-light"
+                  href="https://github.com/Subho4531/docklet/releases/download/v0.1.0/Docklet_0.1.0_x64-setup.exe"
+                >
+                  Download for Windows
+                  <span class="file-size">1.8 MB</span>
+                </a>
+                <a
+                  class="btn btn-outline-light"
+                  href="https://github.com/Subho4531/docklet/releases/download/v0.1.0/Docklet_0.1.0_x64_en-US.msi"
+                >
+                  MSI package
+                  <span class="file-size">2.5 MB</span>
+                </a>
+              </div>
+
+              <p class="download-note">
+                Unsigned preview build. SmartScreen may ask you to confirm the
+                publisher.
+                <a
+                  href="https://github.com/Subho4531/docklet/releases/download/v0.1.0/SHA256SUMS.txt"
+                  target="_blank"
+                  rel="noreferrer"
+                  >SHA-256</a
+                >
+                ·
+                <a
+                  href="https://github.com/Subho4531/docklet/releases/tag/v0.1.0"
+                  target="_blank"
+                  rel="noreferrer"
+                  >All releases ↗</a
+                >
+              </p>
+            </div>
+
+            <div class="download-spec">
+              <div class="spec-row">
+                <span>Installer</span>
+                <strong>NSIS or MSI</strong>
+              </div>
+              <div class="spec-row">
+                <span>Requires</span>
+                <strong>Windows 10 / 11</strong>
+              </div>
+              <div class="spec-row">
+                <span>Docker</span>
+                <strong>Docker Desktop</strong>
+              </div>
+              <div class="spec-row">
+                <span>Local AI</span>
+                <strong>CPU · x64</strong>
+              </div>
+              <div class="download-status">
+                <span class="live-dot" aria-hidden="true"></span>
+                v0.1.0 is the latest release
+              </div>
+            </div>
+          </div>
+
+          <div class="after-install">
+            <div>
+              <span class="step-number">01</span>
+              <h3>Install</h3>
+              <p>Run the installer. WebView2 is bootstrapped if Windows needs it.</p>
+            </div>
+            <div>
+              <span class="step-number">02</span>
+              <h3>Launch</h3>
+              <p>Open Docklet from the Start menu. The Services page opens first.</p>
+            </div>
+            <div>
+              <span class="step-number">03</span>
+              <h3>Leave it running</h3>
+              <p>Close the window and use the tray. Quit only when you mean it.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="section" id="faq">
+        <div class="wrap faq-grid">
+          <div class="faq-intro">
+            <h2>Questions,<br />answered.</h2>
+            <p>
+              The short version: Docklet is local-first, Docker-managed, and
+              happiest in the tray.
+            </p>
+          </div>
+
+          <div class="faq-list">
+            <details>
+              <summary>Do I need Docker Desktop?</summary>
+              <p>
+                Yes. Docklet uses the Docker CLI and expects Docker Desktop to
+                be running with Linux containers. If Docker is offline, Docklet
+                can help you launch it.
+              </p>
+            </details>
+
+            <details>
+              <summary>Where does my data live?</summary>
+              <p>
+                Service data lives in named Docker volumes. Stopping a service
+                preserves both the container and its volume. Reset or Remove is
+                destructive, and only affects resources Docklet created.
+              </p>
+            </details>
+
+            <details>
+              <summary>Can I use my own Docker image?</summary>
+              <p>
+                Yes. Custom services support one image, one localhost port, an
+                optional named volume, environment variables, and a health
+                command. Docklet does not use Compose, bind mounts, privileged
+                mode, or host networking.
+              </p>
+            </details>
+
+            <details>
+              <summary>Which local models can I run?</summary>
+              <p>
+                The curated GGUF catalog covers small chat, coding, and reasoning
+                models. You can also add a custom GGUF from Hugging Face. The
+                bundled engine is a CPU-only llama.cpp build for Windows x64.
+              </p>
+            </details>
+
+            <details>
+              <summary>How do I quit Docklet completely?</summary>
+              <p>
+                Use Quit in the tray menu. Closing the main window or the quick
+                panel only hides it; Docklet and your running services stay
+                available in the tray.
+              </p>
+            </details>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer class="footer">
+      <div class="wrap">
+        <div class="footer-main">
+          <a class="brand footer-brand" href="#top" aria-label="Back to top">
+            <img
+              class="brand-icon"
+              src="assets/docklet-icon.png"
+              width="30"
+              height="30"
+              alt=""
+              draggable="false"
+            />
+            <span class="brand-name">Docklet</span>
+          </a>
+          <p class="footer-line">Local services, without the terminal.</p>
+          <div class="footer-links">
+            <a
+              href="https://github.com/Subho4531/docklet"
+              target="_blank"
+              rel="noreferrer"
+              >GitHub ↗</a
+            >
+            <a
+              href="https://github.com/Subho4531/docklet/releases"
+              target="_blank"
+              rel="noreferrer"
+              >Releases ↗</a
+            >
+            <a
+              href="https://github.com/Subho4531/docklet/#readme"
+              target="_blank"
+              rel="noreferrer"
+              >README ↗</a
+            >
+          </div>
+        </div>
+        <div class="footer-meta">
+          <span>© 2026 Docklet</span>
+          <span>Windows-first · Built with Tauri, Angular, Rust and llama.cpp</span>
+        </div>
+      </div>
+    </footer>
+
+    <div class="toast" role="status" aria-live="polite"></div>
+    <script src="script.js"></script>
+  </body>
+</html>
