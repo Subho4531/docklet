@@ -14,6 +14,7 @@
       </div>
     </div>
 
+    <span class="nav-label">Navigate</span>
     <nav class="main-nav" aria-label="Docklet sections">
       <button
         type="button"
@@ -29,6 +30,7 @@
           <rect x="11.5" y="11.5" width="5.3" height="5.3" rx="1.4" />
         </svg>
         <span>Services</span>
+        <span class="nav-index" aria-hidden="true">01</span>
       </button>
       <button
         type="button"
@@ -42,6 +44,7 @@
           <path d="M4.2 15.2h11.6" />
         </svg>
         <span>Models</span>
+        <span class="nav-index" aria-hidden="true">02</span>
       </button>
       <button
         type="button"
@@ -56,6 +59,7 @@
           <path d="M3.6 13.2l6.4 3.3 6.4-3.3" />
         </svg>
         <span>Library</span>
+        <span class="nav-index" aria-hidden="true">03</span>
       </button>
       <button
         type="button"
@@ -71,18 +75,44 @@
           />
         </svg>
         <span>Settings</span>
+        <span class="nav-index" aria-hidden="true">04</span>
       </button>
     </nav>
 
-    <div class="sidebar-note">
-      <span class="engine-state" [class.is-online]="store.dockerAvailable()">
-        <span class="engine-dot" aria-hidden="true"></span>
-        <span>{{ store.dockerAvailable() ? "Docker ready" : "Docker offline" }}</span>
-      </span>
-      <span>{{ store.runningCount() }} of {{ store.services().length }} running</span>
+    <div class="status-card">
+      <span class="status-prompt"
+        ><span class="prompt-mark" aria-hidden="true">$</span> docklet
+        status</span
+      >
+      <div class="status-grid">
+        <span>docker</span>
+        @if (store.dockerAvailable()) {
+          <span class="status-value is-ok">ready</span>
+        } @else {
+          <button
+            type="button"
+            class="status-value status-action"
+            [disabled]="store.dockerLaunchBusy()"
+            title="Launch Docker Desktop"
+            (click)="store.startDockerDesktop()"
+          >
+            {{ store.dockerLaunchBusy() ? "starting" : "offline · start" }}
+          </button>
+        }
+        <span>services</span>
+        <span class="status-value"
+          >{{ store.runningCount() }} / {{ store.services().length }}</span
+        >
+        <span>models</span>
+        <span class="status-value"
+          >{{ store.llmRunningCount() }} /
+          {{ store.llmInstalledCount() }}</span
+        >
+      </div>
+      <p class="tray-note">
+        Close this window to keep Docklet in the tray.
+      </p>
     </div>
-
-    <p class="tray-note">Close this window to keep Docklet in the tray.</p>
   </aside>
 
   <main class="workspace">

@@ -1,4 +1,4 @@
-import { Component, computed, inject } from "@angular/core";
+import { Component, inject } from "@angular/core";
 
 import { DockletStore } from "../docklet.store";
 import type { LlmModelStatus, ServiceStatus } from "../models";
@@ -12,10 +12,10 @@ import { ServiceIconComponent } from "../service-icon.component";
 })
 export class ServicesPageComponent {
   readonly store = inject(DockletStore);
-  readonly runningLabel = computed(
-    () =>
-      `${this.store.runningCount()} of ${this.store.services().length} running`,
-  );
+
+  rowIndex(index: number): string {
+    return String(index + 1).padStart(2, "0");
+  }
 
   stateLabel(service: ServiceStatus): string {
     const operation = this.store.operationFor(service.id);

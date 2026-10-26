@@ -20,6 +20,15 @@ export class ModelsPageComponent {
     () => this.store.llmEngine()?.installed ?? false,
   );
 
+  readonly llmEndpoint = computed(() => {
+    const port = this.store.llm()?.port;
+    return port ? `http://127.0.0.1:${port}/v1` : null;
+  });
+
+  rowIndex(index: number): string {
+    return String(index + 1).padStart(2, "0");
+  }
+
   isInstalled(id: string): boolean {
     return this.store.llmModels().some((model) => model.id === id);
   }

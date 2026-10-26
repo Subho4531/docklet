@@ -9,91 +9,110 @@
       </p>
     </div>
     <div class="page-summary">
-      <strong>
-        {{ store.llmRunningCount() }}
-        {{ store.llmRunningCount() === 1 ? "model" : "models" }} serving
-      </strong>
-      <span>{{ engineReady() ? "llama.cpp ready" : "Engine setup needed" }}</span>
+      <strong>{{ store.llmRunningCount() }}</strong>
+      <span>of {{ store.llmInstalledCount() }} models serving</span>
+      <span>{{ engineReady() ? "engine ready" : "engine setup needed" }}</span>
     </div>
   </header>
 
   @if (store.llmEngine(); as engine) {
-    <article
-      class="engine-card"
-      [class.is-ready]="engine.installed"
-      [class.is-busy]="engine.installing"
-    >
-      <span class="engine-mark" aria-hidden="true">
-        <svg viewBox="0 0 24 24" fill="none">
-          <rect x="6.2" y="6.2" width="11.6" height="11.6" rx="2.6" />
-          <path d="M9.5 3.6v2.6M14.5 3.6v2.6M9.5 17.8v2.6M14.5 17.8v2.6M3.6 9.5h2.6M3.6 14.5h2.6M17.8 9.5h2.6M17.8 14.5h2.6" />
-          <path d="M10 10h4v4h-4z" />
-        </svg>
-      </span>
-
+    <article class="engine-panel" [class.is-ready]="engine.installed">
       <div class="engine-copy">
+        <span class="section-kicker">Engine</span>
         <div class="engine-title">
           <h2>llama.cpp</h2>
-          <span class="engine-tag">{{ engine.version }}</span>
+          <span class="tag">{{ engine.version }}</span>
           @if (engine.installed) {
-            <span class="engine-tag is-ok">Ready</span>
+            <span class="tag is-ok">Ready</span>
+          }
+          @if (engine.installing) {
+            <span class="tag is-warn">Installing</span>
           }
         </div>
-        <p>
-          Native Windows engine. A 23 MB CPU build is downloaded once,
-          checksum-verified, and kept inside Docklet's local data folder.
+        <p class="engine-lede">
+          Native Windows engine for GGUF models. A 23 MB CPU build is downloaded
+          once, checksum-verified, and kept inside Docklet's local data folder.
         </p>
         @if (engine.error) {
           <p class="engine-error">{{ engine.error }}</p>
         }
-        @if (engine.installing) {
-          <div
-            class="progress-track"
-            role="progressbar"
-            [attr.aria-valuenow]="
-              progressPercent(engine.downloadedBytes, engine.totalBytes)
+        <div class="engine-actions">
+          <button
+            type="button"
+            class="primary-btn"
+            [disabled]="
+              engine.installed || engine.installing || store.engineBusy()
             "
-            aria-valuemin="0"
-            aria-valuemax="100"
+            (click)="installEngine()"
           >
-            <span
-              [style.width.%]="
-                progressPercent(engine.downloadedBytes, engine.totalBytes)
-              "
-            ></span>
-          </div>
-          <span class="progress-note">
-            Downloading engine · {{ formatSize(engine.downloadedBytes) }} of
-            {{ formatSize(engine.totalBytes) }}
+            @if (engine.installing || store.engineBusy()) {
+              <span class="button-spinner" aria-hidden="true"></span>
+            }
+            {{
+              engine.installed
+                ? "Engine ready"
+                : engine.installing || store.engineBusy()
+                  ? "Installing…"
+                  : "Install engine"
+            }}
+          </button>
+          <span class="engine-note">
+            {{
+              engine.installed
+                ? "Runs fully offline"
+                : "One-time download · CPU build"
+            }}
           </span>
-        } @else if (engine.installed && engine.path) {
-          <code class="engine-path" [title]="engine.path">{{
-            engine.path
-          }}</code>
-        } @else {
-          <span class="progress-note"
-            >One-time download · models run fully offline after setup</span
-          >
-        }
+        </div>
       </div>
 
-      <button
-        type="button"
-        class="primary-btn"
-        [disabled]="engine.installed || engine.installing || store.engineBusy()"
-        (click)="installEngine()"
-      >
-        @if (engine.installing || store.engineBusy()) {
-          <span class="button-spinner" aria-hidden="true"></span>
+      <div class="engine-terminal" aria-label="Engine details">
+        <span class="terminal-line"
+          ><span class="terminal-prompt" aria-hidden="true">$</span>
+          llama-server --version</span
+        >
+        <div class="terminal-grid">
+          <span>version</span>
+          <code>{{ engine.version }}</code>
+          <span>runtime</span>
+          <code>windows x64 · cpu</code>
+          <span>status</span>
+          <code [class.is-ok]="engine.installed">
+            {{
+              engine.installed
+                ? "ready"
+                : engine.installing
+                  ? "installing"
+                  : "not installed"
+            }}
+          </code>
+          <span>path</span>
+          <code [title]="engine.path ?? ''">{{ engine.path ?? "—" }}</code>
+        </div>
+        @if (engine.installing) {
+          <div class="terminal-progress">
+            <div
+              class="progress-track"
+              role="progressbar"
+              [attr.aria-valuenow]="
+                progressPercent(engine.downloadedBytes, engine.totalBytes)
+              "
+              aria-valuemin="0"
+              aria-valuemax="100"
+            >
+              <span
+                [style.width.%]="
+                  progressPercent(engine.downloadedBytes, engine.totalBytes)
+                "
+              ></span>
+            </div>
+            <span class="progress-note">
+              {{ formatSize(engine.downloadedBytes) }} of
+              {{ formatSize(engine.totalBytes) }}
+            </span>
+          </div>
         }
-        {{
-          engine.installed
-            ? "Engine ready"
-            : engine.installing || store.engineBusy()
-              ? "Installing…"
-              : "Install engine"
-        }}
-      </button>
+      </div>
     </article>
   }
 
@@ -101,118 +120,139 @@
     <section class="model-section">
       <div class="section-head">
         <div>
-          <h2>Installed models</h2>
+          <span class="section-kicker">Installed</span>
+          <h2>Available locally</h2>
           <span class="section-sub">
-            One model can serve at a time. The endpoint and credentials stay
-            the same when you switch.
+            One model can serve at a time. OpenAI-compatible with bearer auth.
           </span>
         </div>
       </div>
 
-      <div class="installed-list">
-        @for (model of store.llmModels(); track model.id) {
-          <article
-            class="installed-card"
-            [class.is-running]="model.state === 'running'"
-            [attr.data-state]="model.state"
-          >
-            <div class="installed-head">
-              <div class="installed-title">
-                <h3>{{ model.displayName }}</h3>
-                <span>
-                  {{ model.params }} · {{ model.quant }} ·
-                  {{ formatContext(model.contextWindow) }}
+      <div class="llm-access">
+        <button
+          type="button"
+          class="cred-chip"
+          [disabled]="!llmEndpoint()"
+          [title]="llmEndpoint() ?? 'Engine offline'"
+          (click)="copy(llmEndpoint(), 'Endpoint')"
+        >
+          <span>endpoint</span>
+          <code>{{ llmEndpoint() ?? "engine offline" }}</code>
+          <svg viewBox="0 0 20 20" aria-hidden="true">
+            <rect x="7" y="7" width="8.5" height="8.5" rx="2" />
+            <path
+              d="M12.5 7V5.7A1.7 1.7 0 0010.8 4H5.7A1.7 1.7 0 004 5.7v5.1A1.7 1.7 0 005.7 12.5H7"
+            />
+          </svg>
+        </button>
+        <button
+          type="button"
+          class="cred-chip"
+          [disabled]="!store.llm()?.apiKey"
+          [title]="store.llm()?.apiKey ?? ''"
+          (click)="copy(store.llm()?.apiKey, 'API key')"
+        >
+          <span>api key</span>
+          <code>{{ store.llm()?.apiKey ?? "—" }}</code>
+          <svg viewBox="0 0 20 20" aria-hidden="true">
+            <rect x="7" y="7" width="8.5" height="8.5" rx="2" />
+            <path
+              d="M12.5 7V5.7A1.7 1.7 0 0010.8 4H5.7A1.7 1.7 0 004 5.7v5.1A1.7 1.7 0 005.7 12.5H7"
+            />
+          </svg>
+        </button>
+      </div>
+
+      <div class="row-list">
+        @for (model of store.llmModels(); track model.id; let i = $index) {
+          <article class="row" [attr.data-state]="model.state">
+            <span class="row-index">{{ rowIndex(i) }}</span>
+            <span class="row-icon llm-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none">
+                <path
+                  d="M12 3.4l1.9 4.9 5.2.4-4 3.3 1.3 5-4.4-2.8-4.4 2.8 1.3-5-4-3.3 5.2-.4L12 3.4z"
+                />
+                <path d="M6.5 19.4h11" />
+              </svg>
+            </span>
+
+            <div class="row-main">
+              <div class="row-title">
+                <h2>{{ model.displayName }}</h2>
+                <span class="tag">{{ model.quant }}</span>
+                <span class="state-pill" [attr.data-state]="model.state">
+                  <span
+                    class="status-dot"
+                    [attr.data-state]="model.state"
+                  ></span>
+                  {{ stateLabel(model) }}
                 </span>
               </div>
-              <span class="state-pill" [attr.data-state]="model.state">
-                <span
-                  class="status-dot"
-                  [attr.data-state]="model.state"
-                ></span>
-                {{ stateLabel(model) }}
+              <span class="row-meta">
+                {{ model.params }} · {{ formatContext(model.contextWindow) }} ·
+                {{ formatSize(model.sizeBytes) }}
               </span>
-            </div>
 
-            @if (model.error) {
-              <p class="model-error">{{ model.error }}</p>
-            }
+              @if (model.error) {
+                <p class="row-error">{{ model.error }}</p>
+              }
 
-            @if (model.state === "downloading") {
-              <div
-                class="progress-track"
-                role="progressbar"
-                [attr.aria-valuenow]="
-                  progressPercent(model.downloadedBytes, model.totalBytes)
-                "
-                aria-valuemin="0"
-                aria-valuemax="100"
-              >
-                <span
-                  [style.width.%]="
-                    progressPercent(model.downloadedBytes, model.totalBytes)
-                  "
-                ></span>
-              </div>
-              <span class="progress-note">
-                {{ formatSize(model.downloadedBytes) }} of
-                {{ formatSize(model.totalBytes) }}
-              </span>
-            } @else {
-              <div class="credentials">
-                <div class="credential">
-                  <span>Endpoint</span>
-                  <code [title]="model.endpoint ?? ''">{{
-                    model.endpoint ?? "—"
-                  }}</code>
-                  <button
-                    type="button"
-                    (click)="copy(model.endpoint, 'Endpoint')"
+              @if (model.state === "downloading") {
+                <div class="row-progress">
+                  <div
+                    class="progress-track"
+                    role="progressbar"
+                    [attr.aria-valuenow]="
+                      progressPercent(model.downloadedBytes, model.totalBytes)
+                    "
+                    aria-valuemin="0"
+                    aria-valuemax="100"
                   >
-                    Copy
-                  </button>
+                    <span
+                      [style.width.%]="
+                        progressPercent(model.downloadedBytes, model.totalBytes)
+                      "
+                    ></span>
+                  </div>
+                  <span class="progress-note">
+                    {{ formatSize(model.downloadedBytes) }} of
+                    {{ formatSize(model.totalBytes) }}
+                  </span>
                 </div>
-                <div class="credential">
-                  <span>API key</span>
-                  <code [title]="model.apiKey ?? ''">{{ model.apiKey ?? "—" }}</code>
+              } @else {
+                <div class="row-creds">
                   <button
                     type="button"
-                    (click)="copy(model.apiKey, 'API key')"
-                  >
-                    Copy
-                  </button>
-                </div>
-                <div class="credential">
-                  <span>Model</span>
-                  <code [title]="model.modelName ?? ''">{{
-                    model.modelName ?? "—"
-                  }}</code>
-                  <button
-                    type="button"
+                    class="cred-chip"
+                    [title]="model.modelName ?? ''"
                     (click)="copy(model.modelName, 'Model name')"
                   >
-                    Copy
+                    <span>model</span>
+                    <code>{{ model.modelName ?? "—" }}</code>
+                    <svg viewBox="0 0 20 20" aria-hidden="true">
+                      <rect x="7" y="7" width="8.5" height="8.5" rx="2" />
+                      <path
+                        d="M12.5 7V5.7A1.7 1.7 0 0010.8 4H5.7A1.7 1.7 0 004 5.7v5.1A1.7 1.7 0 005.7 12.5H7"
+                      />
+                    </svg>
                   </button>
                 </div>
-              </div>
-
-              @if (model.state === "running") {
-                <span class="endpoint-live">
-                  <span class="live-dot" aria-hidden="true"></span>
-                  OpenAI-compatible · works with <code>/v1/chat/completions</code>
-                </span>
-              } @else {
-                <span class="progress-note">
-                  Start this model to bring the endpoint online.
-                </span>
+                @if (model.state === "running") {
+                  <span class="row-live">
+                    <span class="live-dot" aria-hidden="true"></span>
+                    OpenAI-compatible · /v1/chat/completions
+                  </span>
+                }
               }
-            }
+            </div>
 
-            <div class="installed-actions">
+            <div class="row-actions">
               <button
                 type="button"
-                class="primary-btn"
+                class="primary-btn row-toggle"
                 [class.is-stop]="model.state === 'running'"
                 [disabled]="!canToggle(model)"
+                [attr.aria-busy]="isLlmBusy(model)"
                 (click)="toggle(model)"
               >
                 @if (isLlmBusy(model)) {
@@ -231,7 +271,7 @@
 
               @if (pendingRemove() === model.id) {
                 <div class="remove-confirm">
-                  <span>Delete the model file?</span>
+                  <span>Delete file?</span>
                   <button
                     type="button"
                     class="quiet-btn is-danger"
@@ -267,6 +307,7 @@
   <section class="model-section">
     <div class="section-head">
       <div>
+        <span class="section-kicker">Catalog</span>
         <h2>Recommended models</h2>
         <span class="section-sub">
           Curated GGUF builds from Hugging Face. Downloads go straight to
@@ -356,31 +397,6 @@
             <span>{{ formatContext(entry.contextWindow) }}</span>
           </div>
 
-          @if (entryModel(entry.id); as model) {
-            @if (model.state === "downloading") {
-              <div
-                class="progress-track catalog-progress"
-                role="progressbar"
-                [attr.aria-valuenow]="
-                  progressPercent(model.downloadedBytes, model.totalBytes)
-                "
-                aria-valuemin="0"
-                aria-valuemax="100"
-              >
-                <span
-                  [style.width.%]="
-                    progressPercent(model.downloadedBytes, model.totalBytes)
-                  "
-                ></span>
-              </div>
-              <span class="progress-note">
-                {{ progressPercent(model.downloadedBytes, model.totalBytes) }}%
-                · {{ formatSize(model.downloadedBytes) }} of
-                {{ formatSize(model.totalBytes) }}
-              </span>
-            }
-          }
-
           <div class="catalog-foot">
             <span
               class="catalog-repo"
@@ -389,7 +405,7 @@
             >
             <button
               type="button"
-              class="primary-btn"
+              class="catalog-install"
               [disabled]="
                 !engineReady() ||
                 isInstalled(entry.id) ||
