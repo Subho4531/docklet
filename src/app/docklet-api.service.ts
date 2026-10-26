@@ -5,6 +5,10 @@ import { listen, type UnlistenFn } from "@tauri-apps/api/event";
 import type {
   AppSettings,
   DockerSearchResult,
+  InstallModelRequest,
+  LlmCatalogEntry,
+  LlmProgressPayload,
+  LlmSnapshot,
   MainPage,
   ServiceErrorPayload,
   ServicesSnapshot,
@@ -47,6 +51,38 @@ export class DockletApi {
 
   searchDockerImages(query: string): Promise<DockerSearchResult[]> {
     return invoke<DockerSearchResult[]>("search_docker_images", { query });
+  }
+
+  getLlmStatus(): Promise<LlmSnapshot> {
+    return invoke<LlmSnapshot>("get_llm_status");
+  }
+
+  getLlmCatalog(): Promise<LlmCatalogEntry[]> {
+    return invoke<LlmCatalogEntry[]>("get_llm_catalog");
+  }
+
+  installLlmEngine(): Promise<LlmSnapshot> {
+    return invoke<LlmSnapshot>("install_llm_engine");
+  }
+
+  installModel(request: InstallModelRequest): Promise<LlmSnapshot> {
+    return invoke<LlmSnapshot>("install_model", { request });
+  }
+
+  removeModel(modelId: string): Promise<LlmSnapshot> {
+    return invoke<LlmSnapshot>("remove_model", { modelId });
+  }
+
+  startModel(modelId: string): Promise<LlmSnapshot> {
+    return invoke<LlmSnapshot>("start_model", { modelId });
+  }
+
+  stopModel(): Promise<LlmSnapshot> {
+    return invoke<LlmSnapshot>("stop_model");
+  }
+
+  copyText(text: string): Promise<void> {
+    return invoke<void>("copy_text", { text });
   }
 
   hidePopup(): Promise<void> {
@@ -99,6 +135,20 @@ export class DockletApi {
 
   onMainPage(handler: (page: MainPage) => void): Promise<UnlistenFn> {
     return listen<MainPage>("open-main-page", (event) =>
+      handler(event.payload),
+    );
+  }
+
+  onLlmStatus(handler: (snapshot: LlmSnapshot) => void): Promise<UnlistenFn> {
+    return listen<LlmSnapshot>("llm-status", (event) =>
+      handler(event.payload),
+    );
+  }
+
+  onLlmProgress(
+    handler: (payload: LlmProgressPayload) => void,
+  ): Promise<UnlistenFn> {
+    return listen<LlmProgressPayload>("llm-download-progress", (event) =>
       handler(event.payload),
     );
   }

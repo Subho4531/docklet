@@ -3,13 +3,27 @@ use std::collections::{BTreeMap, HashSet};
 use std::fs;
 use std::path::Path;
 
-pub const SETTINGS_VERSION: u32 = 1;
+pub const SETTINGS_VERSION: u32 = 2;
+pub const DEFAULT_LLM_PORT: u16 = 11435;
 pub const BUILTIN_SERVICES: [(&str, u16); 4] = [
     ("redis", 6379),
     ("postgres", 5432),
     ("mysql", 3306),
     ("mongodb", 27017),
 ];
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub struct LlmModel {
+    pub id: String,
+    pub display_name: String,
+    pub repo: String,
+    pub file_name: String,
+    pub params: String,
+    pub quant: String,
+    pub context_window: u32,
+    pub size_bytes: u64,
+}
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
@@ -42,6 +56,9 @@ pub struct AppSettings {
     pub hide_popup_on_blur: bool,
     pub service_ports: BTreeMap<String, u16>,
     pub custom_services: Vec<CustomService>,
+    pub llm_models: Vec<LlmModel>,
+    pub llm_port: u16,
+    pub llm_api_key: String,
 }
 
 impl Default for AppSettings {
@@ -51,6 +68,9 @@ impl Default for AppSettings {
             hide_popup_on_blur: true,
             service_ports: default_service_ports(),
             custom_services: Vec::new(),
+            llm_models: Vec::new(),
+            llm_port: DEFAULT_LLM_PORT,
+            llm_api_key: String::new(),
         }
     }
 }
@@ -195,7 +215,105 @@ pub fn validate_and_normalize(mut settings: AppSettings) -> Result<AppSettings, 
         }
     }
 
+    validate_port(settings.llm_port, "local LLM port")?;
+
+    let mut llm_ids = HashSet::new();
+    for model in &mut settings.llm_models {
+        model.id = model.id.trim().to_ascii_lowercase();
+        model.display_name = model.display_name.trim().to_string();
+        model.repo = model.repo.trim().to_string();
+        model.file_name = model.file_name.trim().to_string();
+        model.params = model.params.trim().to_string();
+        model.quant = model.quant.trim().to_string();
+
+        if model.id.len() < 2
+            || model.id.len() > 48
+            || !model.id.chars().all(|character| {
+                character.is_ascii_lowercase() || character.is_ascii_digit() || character == '-'
+            })
+            || model.id.starts_with('-')
+            || model.id.ends_with('-')
+        {
+            return Err(
+                "A local LLM ID must be 2–48 lowercase letters, numbers, or hyphens.".into(),
+            );
+        }
+        if !llm_ids.insert(model.id.clone()) {
+            return Err(format!(
+                "The local LLM ID `{}` is already in use.",
+                model.id
+            ));
+        }
+
+        validate_name(&model.display_name, "model name")?;
+        validate_model_repo(&model.repo)?;
+        validate_model_file(&model.file_name)?;
+
+        if model.context_window == 0 || model.context_window > 1_048_576 {
+            return Err(format!(
+                "The context size for {} must be between 1 and 1048576 tokens.",
+                model.display_name
+            ));
+        }
+        if model.params.chars().count() > 24 || model.quant.chars().count() > 24 {
+            return Err(format!(
+                "The model details for {} are too long.",
+                model.display_name
+            ));
+        }
+    }
+
+    if !settings.llm_api_key.is_empty() {
+        let key = &settings.llm_api_key;
+        if key.len() < 16
+            || key.len() > 256
+            || key
+                .chars()
+                .any(|character| character.is_whitespace() || character.is_control())
+        {
+            return Err("The local LLM API key is invalid.".to_string());
+        }
+    }
+
     Ok(settings)
+}
+
+pub(crate) fn validate_model_repo(repo: &str) -> Result<(), String> {
+    let mut parts = repo.split('/');
+    let (Some(owner), Some(name), None) = (parts.next(), parts.next(), parts.next()) else {
+        return Err("A model repository must look like `owner/repo`.".to_string());
+    };
+    if owner.is_empty()
+        || name.is_empty()
+        || owner.len() > 96
+        || name.len() > 96
+        || !owner.chars().all(|character| {
+            character.is_ascii_alphanumeric() || matches!(character, '-' | '_' | '.')
+        })
+        || !name.chars().all(|character| {
+            character.is_ascii_alphanumeric() || matches!(character, '-' | '_' | '.')
+        })
+    {
+        return Err("That Hugging Face repository name isn't valid.".to_string());
+    }
+    Ok(())
+}
+
+pub(crate) fn validate_model_file(file_name: &str) -> Result<(), String> {
+    if file_name.len() < 6
+        || file_name.len() > 160
+        || !file_name.to_ascii_lowercase().ends_with(".gguf")
+        || file_name.contains("..")
+        || !file_name.chars().all(|character| {
+            character.is_ascii_alphanumeric() || matches!(character, '-' | '_' | '.')
+        })
+    {
+        return Err(
+            "A model file must be a `.gguf` file name using letters, numbers, dots, dashes, or underscores."
+                .to_string(),
+        );
+    }
+    Ok(())
 }
 
 fn normalize_builtin_ports(
@@ -239,7 +357,7 @@ fn validate_service_id(id: &str) -> Result<(), String> {
     Ok(())
 }
 
-fn validate_name(value: &str, label: &str) -> Result<(), String> {
+pub(crate) fn validate_name(value: &str, label: &str) -> Result<(), String> {
     let length = value.chars().count();
     if length == 0 || length > 48 {
         return Err(format!("The {label} must be 1–48 characters."));
@@ -469,5 +587,80 @@ mod tests {
         assert_eq!(loaded.port_for("redis"), Some(6380));
         assert!(!directory.join("settings.json.tmp").exists());
         let _ = fs::remove_dir_all(directory);
+    }
+
+    #[test]
+    fn loads_legacy_settings_without_llm_fields() {
+        let legacy = r#"{
+            "version": 1,
+            "hidePopupOnBlur": true,
+            "servicePorts": {
+                "redis": 6379,
+                "postgres": 5432,
+                "mysql": 3306,
+                "mongodb": 27017
+            },
+            "customServices": []
+        }"#;
+        let parsed: AppSettings = serde_json::from_str(legacy).unwrap();
+        let normalized = validate_and_normalize(parsed).unwrap();
+
+        assert_eq!(normalized.version, SETTINGS_VERSION);
+        assert!(normalized.llm_models.is_empty());
+        assert_eq!(normalized.llm_port, DEFAULT_LLM_PORT);
+        assert!(normalized.llm_api_key.is_empty());
+    }
+
+    #[test]
+    fn validates_model_repositories() {
+        assert!(validate_model_repo("owner/repo").is_ok());
+        assert!(validate_model_repo("owner.name/model_repo").is_ok());
+        assert!(validate_model_repo("owner").is_err());
+        assert!(validate_model_repo("owner/repo/extra").is_err());
+        assert!(validate_model_repo("/repo").is_err());
+        assert!(validate_model_repo("own er/repo").is_err());
+        assert!(validate_model_repo("owner/re po").is_err());
+    }
+
+    #[test]
+    fn validates_model_file_names() {
+        assert!(validate_model_file("Model-Q4_K_M.gguf").is_ok());
+        assert!(validate_model_file("model.gguf").is_ok());
+        assert!(validate_model_file("model.bin").is_err());
+        assert!(validate_model_file("model.gguf.txt").is_err());
+        assert!(validate_model_file("../model.gguf").is_err());
+        assert!(validate_model_file("model file.gguf").is_err());
+        assert!(validate_model_file("m.ggu").is_err());
+    }
+
+    #[test]
+    fn rejects_duplicate_llm_model_ids() {
+        let mut settings = AppSettings::default();
+        settings.llm_models.push(LlmModel {
+            id: "same-id".into(),
+            display_name: "First".into(),
+            repo: "owner/repo".into(),
+            file_name: "First-Q4_K_M.gguf".into(),
+            params: "1B".into(),
+            quant: "Q4_K_M".into(),
+            context_window: 4096,
+            size_bytes: 100,
+        });
+        settings.llm_models.push(LlmModel {
+            id: "same-id".into(),
+            display_name: "Second".into(),
+            repo: "owner/repo".into(),
+            file_name: "Second-Q4_K_M.gguf".into(),
+            params: "1B".into(),
+            quant: "Q4_K_M".into(),
+            context_window: 4096,
+            size_bytes: 100,
+        });
+
+        assert!(
+            validate_and_normalize(settings)
+                .unwrap_err()
+                .contains("already in use")
+        );
     }
 }

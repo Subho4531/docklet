@@ -12,6 +12,12 @@ import type {
   AppSettings,
   CustomService,
   DockerSearchResult,
+  InstallModelRequest,
+  LlmCatalogEntry,
+  LlmModelStatus,
+  LlmOperation,
+  LlmProgressPayload,
+  LlmSnapshot,
   MainPage,
   ServiceOperation,
   ServiceStatus,
@@ -39,6 +45,10 @@ export class DockletStore {
   readonly autostartAvailable = signal(false);
   readonly autostartBusy = signal(false);
   readonly mainPage = signal<MainPage>("services");
+  readonly llm = signal<LlmSnapshot | null>(null);
+  readonly llmCatalog = signal<LlmCatalogEntry[]>([]);
+  readonly llmBusy = signal<Record<string, LlmOperation>>({});
+  readonly engineBusy = signal(false);
 
   readonly services = computed<ServiceStatus[]>(
     () => this.snapshot()?.services ?? [],
@@ -53,6 +63,17 @@ export class DockletStore {
   );
   readonly dockerAvailable = computed(
     () => this.snapshot()?.dockerAvailable ?? false,
+  );
+  readonly llmModels = computed<LlmModelStatus[]>(
+    () => this.llm()?.models ?? [],
+  );
+  readonly llmEngine = computed(() => this.llm()?.engine ?? null);
+  readonly llmRunningCount = computed(
+    () => this.llmModels().filter((model) => model.state === "running").length,
+  );
+  readonly llmInstalledCount = computed(
+    () =>
+      this.llmModels().filter((model) => model.state !== "downloading").length,
   );
 
   private initialized = false;
@@ -262,6 +283,183 @@ export class DockletStore {
     }
   }
 
+  llmModel(id: string): LlmModelStatus | undefined {
+    return this.llmModels().find((model) => model.id === id);
+  }
+
+  llmOperationFor(id: string): LlmOperation | null {
+    return this.llmBusy()[id] ?? null;
+  }
+
+  isLlmBusy(id: string): boolean {
+    return this.llmOperationFor(id) !== null;
+  }
+
+  async installEngine(): Promise<void> {
+    if (this.engineBusy()) {
+      return;
+    }
+
+    this.engineBusy.set(true);
+    try {
+      const snapshot = await this.api.installLlmEngine();
+      this.llm.set(snapshot);
+      this.showToast("llama.cpp engine ready");
+    } catch (error) {
+      this.showToast(this.describeError(error), "danger");
+      await this.refreshLlmQuietly();
+    } finally {
+      this.engineBusy.set(false);
+    }
+  }
+
+  installCatalogModel(entry: LlmCatalogEntry): Promise<boolean> {
+    return this.installModel(
+      { catalogId: entry.id },
+      entry.id,
+      entry.displayName,
+    );
+  }
+
+  installCustomModel(
+    repo: string,
+    fileName: string,
+    displayName: string,
+  ): Promise<boolean> {
+    return this.installModel(
+      {
+        repo,
+        fileName,
+        displayName: displayName || null,
+      },
+      "custom",
+      displayName || fileName,
+    );
+  }
+
+  toggleLlm(model: LlmModelStatus): Promise<void> {
+    if (model.state === "running") {
+      return this.stopLlm(model);
+    }
+    return this.startLlm(model);
+  }
+
+  async removeLlm(model: LlmModelStatus): Promise<boolean> {
+    if (this.isLlmBusy(model.id)) {
+      return false;
+    }
+
+    this.setLlmBusy(model.id, "remove");
+    try {
+      const snapshot = await this.api.removeModel(model.id);
+      this.llm.set(snapshot);
+      this.showToast(`${model.displayName} removed from Docklet`);
+      return true;
+    } catch (error) {
+      this.showToast(this.describeError(error), "danger");
+      await this.refreshLlmQuietly();
+      return false;
+    } finally {
+      this.setLlmBusy(model.id, null);
+    }
+  }
+
+  async copyLlmValue(
+    value: string | null | undefined,
+    label: string,
+  ): Promise<void> {
+    if (!value) {
+      this.showToast(`No ${label.toLowerCase()} is available yet.`, "danger");
+      return;
+    }
+    try {
+      await this.api.copyText(value);
+      this.showToast(`${label} copied`);
+    } catch (error) {
+      this.showToast(this.describeError(error), "danger");
+    }
+  }
+
+  private async installModel(
+    request: InstallModelRequest,
+    busyKey: string,
+    label: string,
+  ): Promise<boolean> {
+    if (this.llmBusy()[busyKey]) {
+      return false;
+    }
+
+    this.setLlmBusy(busyKey, "install");
+    try {
+      const snapshot = await this.api.installModel(request);
+      this.llm.set(snapshot);
+      this.showToast(`${label} installed`);
+      return true;
+    } catch (error) {
+      this.showToast(this.describeError(error), "danger");
+      await this.refreshLlmQuietly();
+      return false;
+    } finally {
+      this.setLlmBusy(busyKey, null);
+    }
+  }
+
+  private async startLlm(model: LlmModelStatus): Promise<void> {
+    if (this.isLlmBusy(model.id)) {
+      return;
+    }
+
+    this.setLlmBusy(model.id, "start");
+    try {
+      const snapshot = await this.api.startModel(model.id);
+      this.llm.set(snapshot);
+      this.showToast(`${model.displayName} is ready`);
+    } catch (error) {
+      this.showToast(this.describeError(error), "danger");
+      await this.refreshLlmQuietly();
+    } finally {
+      this.setLlmBusy(model.id, null);
+    }
+  }
+
+  private async stopLlm(model: LlmModelStatus): Promise<void> {
+    if (this.isLlmBusy(model.id)) {
+      return;
+    }
+
+    this.setLlmBusy(model.id, "stop");
+    try {
+      const snapshot = await this.api.stopModel();
+      this.llm.set(snapshot);
+      this.showToast(`${model.displayName} stopped`);
+    } catch (error) {
+      this.showToast(this.describeError(error), "danger");
+      await this.refreshLlmQuietly();
+    } finally {
+      this.setLlmBusy(model.id, null);
+    }
+  }
+
+  private setLlmBusy(id: string, operation: LlmOperation | null): void {
+    this.llmBusy.update((current) => {
+      const next = { ...current };
+      if (operation === null) {
+        delete next[id];
+      } else {
+        next[id] = operation;
+      }
+      return next;
+    });
+  }
+
+  private async refreshLlmQuietly(): Promise<void> {
+    try {
+      this.llm.set(await this.api.getLlmStatus());
+    } catch {
+      // Keep the last known snapshot; explicit actions surface errors.
+    }
+  }
+
   refresh(): Promise<void> {
     return this.refreshQuietly(true);
   }
@@ -323,11 +521,21 @@ export class DockletStore {
       this.api.getAutostartEnabled(),
     ];
     if (this.role() === "main") {
-      tasks.push(this.api.getSettings(), this.api.getMainPage());
+      tasks.push(
+        this.api.getSettings(),
+        this.api.getMainPage(),
+        this.api.getLlmCatalog(),
+        this.api.getLlmStatus(),
+      );
     }
 
-    const [servicesResult, autostartResult, settingsResult, pageResult] =
-      await Promise.allSettled(tasks);
+    const results = await Promise.allSettled(tasks);
+    const servicesResult = results[0];
+    const autostartResult = results[1];
+    const settingsResult = results[2];
+    const pageResult = results[3];
+    const catalogResult = results[4];
+    const llmResult = results[5];
 
     if (servicesResult?.status === "fulfilled") {
       this.snapshot.set(servicesResult.value as ServicesSnapshot);
@@ -348,6 +556,14 @@ export class DockletStore {
 
     if (pageResult?.status === "fulfilled") {
       this.mainPage.set(this.normalizePage(pageResult.value));
+    }
+
+    if (catalogResult?.status === "fulfilled") {
+      this.llmCatalog.set(catalogResult.value as LlmCatalogEntry[]);
+    }
+
+    if (llmResult?.status === "fulfilled") {
+      this.llm.set(llmResult.value as LlmSnapshot);
     }
 
     if (document.hasFocus() && !document.hidden) {
@@ -378,6 +594,12 @@ export class DockletStore {
         }),
         this.api.onMainPage((page) => {
           this.mainPage.set(this.normalizePage(page));
+        }),
+        this.api.onLlmStatus((snapshot) => {
+          this.llm.set(snapshot);
+        }),
+        this.api.onLlmProgress((payload) => {
+          this.applyLlmProgress(payload);
         }),
       ]);
       this.unlisteners.push(...listeners);
@@ -440,6 +662,9 @@ export class DockletStore {
       const snapshot = await this.api.getServices();
       this.snapshot.set(snapshot);
       this.loading.set(false);
+      if (this.role() === "main") {
+        await this.refreshLlmQuietly();
+      }
     } catch {
       // Keep the last good snapshot; explicit actions surface errors.
     } finally {
@@ -457,10 +682,45 @@ export class DockletStore {
         this.showToast(this.describeError(error), "danger");
       }
     }
+    if (this.role() === "main") {
+      await this.refreshLlmQuietly();
+    }
+  }
+
+  private applyLlmProgress(payload: LlmProgressPayload): void {
+    this.llm.update((snapshot) => {
+      if (!snapshot) {
+        return snapshot;
+      }
+      if (payload.id === "engine") {
+        return {
+          ...snapshot,
+          engine: {
+            ...snapshot.engine,
+            downloadedBytes: payload.downloadedBytes,
+            totalBytes: payload.totalBytes,
+          },
+        };
+      }
+      return {
+        ...snapshot,
+        models: snapshot.models.map((model) =>
+          model.id === payload.id
+            ? {
+                ...model,
+                downloadedBytes: payload.downloadedBytes,
+                totalBytes: payload.totalBytes,
+              }
+            : model,
+        ),
+      };
+    });
   }
 
   private normalizePage(page: unknown): MainPage {
-    return page === "settings" || page === "library" ? page : "services";
+    return page === "models" || page === "settings" || page === "library"
+      ? page
+      : "services";
   }
 
   private describeError(error: unknown): string {

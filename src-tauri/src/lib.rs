@@ -1,5 +1,6 @@
 mod commands;
 mod docker;
+mod llama;
 mod services;
 mod settings;
 mod state;
@@ -37,6 +38,7 @@ pub fn run() {
             };
 
             app.manage(AppState::new(settings, settings_path));
+            llama::cleanup_on_startup(app.handle());
 
             let handles = tray::create(app.handle())?;
             app.manage(handles);
@@ -48,6 +50,7 @@ pub fn run() {
             let app_handle = app.handle().clone();
             tauri::async_runtime::spawn(async move {
                 commands::refresh_and_publish(&app_handle).await;
+                llama::publish(&app_handle).await;
             });
 
             let launched_hidden = std::env::args().any(|argument| argument == "--hidden");
@@ -101,7 +104,21 @@ pub fn run() {
             commands::get_main_page,
             commands::get_autostart_enabled,
             commands::set_autostart_enabled,
+            commands::copy_text,
+            llama::get_llm_status,
+            llama::get_llm_catalog,
+            llama::install_llm_engine,
+            llama::install_model,
+            llama::remove_model,
+            llama::start_model,
+            llama::stop_model,
         ])
-        .run(tauri::generate_context!())
-        .expect("error while running Docklet");
+        .build(tauri::generate_context!())
+        .expect("error while building Docklet")
+        .run(|app_handle, event| match event {
+            tauri::RunEvent::ExitRequested { .. } | tauri::RunEvent::Exit => {
+                llama::shutdown(app_handle);
+            }
+            _ => {}
+        });
 }

@@ -305,3 +305,153 @@
   font-size: 9px;
   line-height: 1.5;
 }
+
+.llm-group {
+  margin-top: 26px;
+}
+
+.group-head {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.group-kicker {
+  color: var(--ink-ghost);
+  font-size: 8px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.group-head h2 {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin: 6px 0 0;
+  font-family: var(--font-display);
+  font-size: 18px;
+  font-weight: 650;
+  letter-spacing: -0.025em;
+}
+
+.group-count {
+  color: var(--ink-faint);
+  font-family: var(--font-body);
+  font-size: 9px;
+  font-weight: 500;
+  letter-spacing: 0;
+}
+
+.llm-cards {
+  display: grid;
+  margin-top: 12px;
+  grid-template-columns: repeat(auto-fit, minmax(290px, 1fr));
+  gap: 12px;
+}
+
+.llm-card {
+  min-height: 0;
+}
+
+.llm-icon {
+  border-color: rgba(209, 68, 73, 0.18);
+  background: var(--accent-soft);
+  color: #f0a4a7;
+}
+
+.llm-icon svg {
+  width: 19px;
+  height: 19px;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.25;
+}
+
+.llm-credential-row {
+  display: grid;
+  grid-template-columns: 38px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 6px;
+}
+
+.llm-credential-row > span {
+  color: var(--ink-ghost);
+  font-size: 7px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.llm-credential-row code {
+  overflow: hidden;
+  color: rgba(255, 255, 255, 0.76);
+  font-family: var(--font-mono);
+  font-size: 8.5px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.llm-credential-row button {
+  padding: 2px 5px;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  color: var(--ink-ghost);
+  font-size: 7.5px;
+  transition:
+    color 150ms var(--ease),
+    background 150ms var(--ease),
+    border-color 150ms var(--ease);
+}
+
+.llm-credential-row button:hover {
+  border-color: var(--line);
+  background: var(--surface);
+  color: var(--ink);
+}
+
+.llm-muted-note {
+  color: var(--ink-ghost);
+  font-size: 8.5px;
+}
+
+.llm-progress {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  margin-top: 14px;
+}
+
+.llm-progress-track {
+  height: 4px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.07);
+}
+
+.llm-progress-track span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, var(--accent), #ef8084);
+  transition: width 200ms var(--ease);
+}
+
+.llm-progress-note {
+  color: var(--ink-faint);
+  font-size: 8.5px;
+}
+
+.state-pill[data-state="downloading"] {
+  border-color: rgba(239, 193, 108, 0.15);
+  background: rgba(239, 193, 108, 0.055);
+  color: rgba(239, 205, 145, 0.8);
+}
+
+.status-dot[data-state="downloading"] {
+  background: var(--warn);
+  box-shadow: 0 0 0 2px rgba(239, 193, 108, 0.11);
+}

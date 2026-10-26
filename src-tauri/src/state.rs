@@ -5,6 +5,7 @@ use std::sync::{Arc, Mutex, RwLock};
 
 use tauri::PhysicalPosition;
 
+use crate::llama::LlmRuntimeState;
 use crate::settings::AppSettings;
 
 pub struct AppState {
@@ -12,6 +13,10 @@ pub struct AppState {
     settings_path: PathBuf,
     operation_locks: Mutex<HashMap<String, Arc<tokio::sync::Mutex<()>>>>,
     pub settings_lock: tokio::sync::Mutex<()>,
+    pub llm_runtime: Mutex<LlmRuntimeState>,
+    pub llm_server: tokio::sync::Mutex<Option<tokio::process::Child>>,
+    pub llm_lock: tokio::sync::Mutex<()>,
+    pub llm_engine_lock: tokio::sync::Mutex<()>,
     pub focus_generation: AtomicU64,
     pub last_tray_anchor: Mutex<Option<PhysicalPosition<f64>>>,
     pub pending_main_page: Mutex<Option<String>>,
@@ -24,6 +29,10 @@ impl AppState {
             settings_path,
             operation_locks: Mutex::new(HashMap::new()),
             settings_lock: tokio::sync::Mutex::new(()),
+            llm_runtime: Mutex::new(LlmRuntimeState::default()),
+            llm_server: tokio::sync::Mutex::new(None),
+            llm_lock: tokio::sync::Mutex::new(()),
+            llm_engine_lock: tokio::sync::Mutex::new(()),
             focus_generation: AtomicU64::new(0),
             last_tray_anchor: Mutex::new(None),
             pending_main_page: Mutex::new(None),

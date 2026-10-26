@@ -33,6 +33,19 @@
       <button
         type="button"
         class="nav-button"
+        [class.is-active]="store.mainPage() === 'models'"
+        [attr.aria-current]="store.mainPage() === 'models' ? 'page' : null"
+        (click)="navigate('models')"
+      >
+        <svg viewBox="0 0 20 20" fill="none" aria-hidden="true">
+          <path d="M10 3.3l1.55 3.14 3.46.5-2.5 2.44.59 3.45L10 11.2l-3.1 1.63.59-3.45-2.5-2.44 3.46-.5L10 3.3z" />
+          <path d="M4.2 15.2h11.6" />
+        </svg>
+        <span>Models</span>
+      </button>
+      <button
+        type="button"
+        class="nav-button"
         [class.is-active]="store.mainPage() === 'library'"
         [attr.aria-current]="store.mainPage() === 'library' ? 'page' : null"
         (click)="navigate('library')"
@@ -74,6 +87,9 @@
 
   <main class="workspace">
     @switch (store.mainPage()) {
+      @case ("models") {
+        <app-models-page />
+      }
       @case ("library") {
         <app-library-page />
       }

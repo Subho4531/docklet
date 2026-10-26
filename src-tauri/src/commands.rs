@@ -130,6 +130,20 @@ pub async fn copy_service_url(app: AppHandle, service_id: String) -> Result<Stri
 }
 
 #[tauri::command]
+pub fn copy_text(app: AppHandle, text: String) -> Result<(), String> {
+    if text.trim().is_empty() {
+        return Err("There's nothing to copy.".to_string());
+    }
+    if text.len() > 4096 {
+        return Err("That value is too long to copy.".to_string());
+    }
+
+    app.clipboard()
+        .write_text(text)
+        .map_err(|error| format!("Couldn't copy to the clipboard. {error}"))
+}
+
+#[tauri::command]
 pub fn get_settings(app: AppHandle) -> AppSettings {
     app.state::<AppState>().settings()
 }
@@ -156,6 +170,9 @@ pub async fn save_settings(app: AppHandle, settings: AppSettings) -> Result<AppS
         return Err(format!(
             "Use Remove service to delete `{removed}` and its managed data."
         ));
+    }
+    if previous.llm_models != normalized.llm_models {
+        return Err("Use the Models page to add or remove local LLMs.".to_string());
     }
 
     settings::save(state.settings_path(), &normalized)?;
@@ -241,6 +258,7 @@ pub async fn search_docker_images(
 #[tauri::command]
 pub fn open_main(app: AppHandle, page: Option<String>) {
     let page = match page.as_deref() {
+        Some("models") => "models",
         Some("settings") => "settings",
         Some("library") => "library",
         _ => "services",

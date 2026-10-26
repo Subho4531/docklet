@@ -27,6 +27,171 @@
     </div>
   }
 
+  @if (store.llmModels().length > 0) {
+    <section class="llm-group">
+      <div class="group-head">
+        <div>
+          <span class="group-kicker">On this device</span>
+          <h2>
+            Local LLMs
+            <span class="group-count">
+              {{ store.llmRunningCount() }} of
+              {{ store.llmInstalledCount() }} serving
+            </span>
+          </h2>
+        </div>
+        <button type="button" class="quiet-btn" (click)="openModels()">
+          Manage models
+        </button>
+      </div>
+
+      <div class="llm-cards">
+        @for (model of store.llmModels(); track model.id) {
+          <article
+            class="service-card llm-card"
+            [class.is-running]="model.state === 'running'"
+            [class.is-busy]="store.isLlmBusy(model.id)"
+            [attr.data-state]="model.state"
+          >
+            <div class="card-head">
+              <span class="card-icon llm-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none">
+                  <path
+                    d="M12 3.4l1.9 4.9 5.2.4-4 3.3 1.3 5-4.4-2.8-4.4 2.8 1.3-5-4-3.3 5.2-.4L12 3.4z"
+                  />
+                  <path d="M6.5 19.4h11" />
+                </svg>
+              </span>
+              <div class="card-title">
+                <div class="card-name-line">
+                  <h2>{{ model.displayName }}</h2>
+                  <span class="custom-badge">Local LLM</span>
+                </div>
+                <span class="card-image">
+                  {{ model.params }} · {{ model.quant }} · {{ model.modelName }}
+                </span>
+              </div>
+              <span class="state-pill" [attr.data-state]="model.state">
+                <span
+                  class="status-dot"
+                  [attr.data-state]="model.state"
+                ></span>
+                {{ llmStateLabel(model) }}
+              </span>
+            </div>
+
+            @if (model.state === "downloading") {
+              <div class="llm-progress">
+                <div
+                  class="llm-progress-track"
+                  role="progressbar"
+                  [attr.aria-valuenow]="llmProgress(model)"
+                  aria-valuemin="0"
+                  aria-valuemax="100"
+                >
+                  <span [style.width.%]="llmProgress(model)"></span>
+                </div>
+                <span class="llm-progress-note">
+                  {{ llmProgress(model) }}% · {{ formatBytes(model.downloadedBytes) }}
+                  of {{ formatBytes(model.totalBytes) }}
+                </span>
+              </div>
+            } @else {
+              <div class="card-connection">
+                <span class="connection-label">OpenAI-compatible endpoint</span>
+                <code [class.is-muted]="model.state !== 'running'">{{
+                  model.endpoint ?? "Install a model to create an endpoint"
+                }}</code>
+
+                <div class="llm-credential-row">
+                  <span>Key</span>
+                  <code [title]="model.apiKey ?? ''">{{ model.apiKey ?? "-" }}</code>
+                  <button
+                    type="button"
+                    (click)="copyLlm(model.apiKey, 'API key')"
+                  >
+                    Copy
+                  </button>
+                </div>
+                <div class="llm-credential-row">
+                  <span>Model</span>
+                  <code [title]="model.modelName ?? ''">{{
+                    model.modelName ?? "-"
+                  }}</code>
+                  <button
+                    type="button"
+                    (click)="copyLlm(model.modelName, 'Model name')"
+                  >
+                    Copy
+                  </button>
+                </div>
+                @if (model.state !== "running") {
+                  <span class="llm-muted-note">
+                    Start the model to make the endpoint live.
+                  </span>
+                }
+              </div>
+            }
+
+            @if (model.error) {
+              <p class="card-error">{{ model.error }}</p>
+            }
+
+            <div class="card-meta">
+              <span>Context <strong>{{ model.contextWindow }}</strong></span>
+              <span>Quant <strong>{{ model.quant }}</strong></span>
+            </div>
+
+            <div class="card-actions">
+              <button
+                type="button"
+                class="primary-btn"
+                [class.is-stop]="isLlmRunning(model)"
+                [disabled]="!canToggleLlm(model)"
+                (click)="toggleLlm(model)"
+              >
+                @if (store.isLlmBusy(model.id)) {
+                  <span class="button-spinner" aria-hidden="true"></span>
+                } @else if (isLlmRunning(model)) {
+                  <svg viewBox="0 0 20 20" fill="none" aria-hidden="true">
+                    <rect x="6.2" y="6.2" width="7.6" height="7.6" rx="1.6" />
+                  </svg>
+                } @else {
+                  <svg viewBox="0 0 20 20" fill="none" aria-hidden="true">
+                    <path d="M7.3 5.5l6.6 4.5-6.6 4.5V5.5z" />
+                  </svg>
+                }
+                {{ llmActionLabel(model) }}
+              </button>
+              <button
+                type="button"
+                class="quiet-btn"
+                [disabled]="model.state !== 'running'"
+                (click)="copyLlm(model.endpoint, 'Endpoint')"
+              >
+                Copy endpoint
+              </button>
+              <button
+                type="button"
+                class="icon-btn"
+                title="Manage models"
+                aria-label="Manage models"
+                (click)="openModels()"
+              >
+                <svg viewBox="0 0 20 20" fill="none" aria-hidden="true">
+                  <circle cx="10" cy="10" r="2.5" />
+                  <path
+                    d="M16 11.8l1.1.8-1.5 2.7-1.3-.5a6.4 6.4 0 01-1.6.9l-.2 1.4H9.4l-.2-1.4a6.4 6.4 0 01-1.6-.9l-1.3.5-1.5-2.7 1.1-.8a6.5 6.5 0 010-1.8l-1.1-.8 1.5-2.7 1.3.5a6.4 6.4 0 011.6-.9l.2-1.4h3.1l.2 1.4a6.4 6.4 0 011.6.9l1.3-.5 1.5 2.7-1.1.8a6.5 6.5 0 010 1.8z"
+                  />
+                </svg>
+              </button>
+            </div>
+          </article>
+        }
+      </div>
+    </section>
+  }
+
   <div class="service-cards">
     @for (service of store.services(); track service.id) {
       <article
