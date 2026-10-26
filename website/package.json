@@ -1,0 +1,16 @@
+{
+  "name": "website",
+  "version": "1.0.0",
+  "description": "Static launch and download site for Docklet. The visual direction comes from the Gallery variant in `portfolio-ui-prototype.html`.",
+  "main": "script.js",
+  "scripts": {
+    "dev": "npx serve .",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@vercel/analytics": "^2.0.1"
+  }
+}
