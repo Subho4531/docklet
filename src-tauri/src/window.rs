@@ -10,7 +10,6 @@ pub const POPUP_WIDTH: f64 = 380.0;
 
 const POPUP_GAP: i32 = 10;
 const SCREEN_MARGIN: i32 = 8;
-const POPUP_RADIUS: f64 = 14.0;
 
 pub fn remember_anchor(app: &AppHandle, position: PhysicalPosition<f64>) {
     if let Some(state) = app.try_state::<AppState>() {
@@ -54,42 +53,29 @@ pub fn show_popup(app: &AppHandle, anchor: Option<PhysicalPosition<f64>>) {
 pub fn apply_popup_shape(window: &WebviewWindow) {
     #[cfg(windows)]
     {
-        use windows::Win32::Graphics::Gdi::{
-            CreateRoundRectRgn, DeleteObject, HGDIOBJ, SetWindowRgn,
+        use windows::Win32::Graphics::Dwm::{
+            DWM_WINDOW_CORNER_PREFERENCE, DWMWA_WINDOW_CORNER_PREFERENCE, DWMWCP_ROUND,
+            DwmSetWindowAttribute,
         };
 
         let Ok(hwnd) = window.hwnd() else {
             return;
         };
-        let Ok(size) = window.outer_size() else {
-            return;
-        };
-        if size.width == 0 || size.height == 0 {
-            return;
-        }
 
-        let scale = window.scale_factor().unwrap_or(1.0);
-        let radius = (POPUP_RADIUS * scale).round().max(1.0) as i32;
-        let region = unsafe {
-            CreateRoundRectRgn(
-                0,
-                0,
-                size.width as i32 + 1,
-                size.height as i32 + 1,
-                radius * 2,
-                radius * 2,
-            )
-        };
-
-        if region.is_invalid() {
-            return;
-        }
-
-        // The operating system owns the region after a successful call.
-        if unsafe { SetWindowRgn(hwnd, Some(region), true) } == 0 {
-            unsafe {
-                let _ = DeleteObject(HGDIOBJ(region.0));
-            }
+        // Let the DWM own the popup silhouette. SetWindowRgn never reaches the
+        // composited surface here: Windows 11 rounds the window anyway with a
+        // fixed system radius, and the acrylic backdrop ignores custom regions,
+        // which left flat unclipped corners around the webview's own rounded
+        // shape. Round via corner preference instead and keep the webview glass
+        // full-bleed so no backdrop sliver can escape.
+        let preference: DWM_WINDOW_CORNER_PREFERENCE = DWMWCP_ROUND;
+        unsafe {
+            let _ = DwmSetWindowAttribute(
+                hwnd,
+                DWMWA_WINDOW_CORNER_PREFERENCE,
+                &preference as *const DWM_WINDOW_CORNER_PREFERENCE as *const core::ffi::c_void,
+                std::mem::size_of::<DWM_WINDOW_CORNER_PREFERENCE>() as u32,
+            );
         }
     }
 

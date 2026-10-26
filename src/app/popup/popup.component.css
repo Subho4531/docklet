@@ -15,7 +15,9 @@
   overflow: hidden;
   isolation: isolate;
   border: 1px solid var(--line-strong);
-  border-radius: 14px;
+  /* Full-bleed on purpose: the DWM rounds the window silhouette (corner
+     preference, see apply_popup_shape). Any CSS rounding here would let the
+     raw acrylic backdrop show through corner crescents. */
   background:
     radial-gradient(110% 75% at 50% -25%, rgba(209, 68, 73, 0.15), transparent 58%),
     radial-gradient(95% 70% at 110% 115%, rgba(77, 96, 145, 0.12), transparent 70%),
