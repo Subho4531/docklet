@@ -1,5 +1,6 @@
 import { Component, inject, signal } from "@angular/core";
 import { getCurrentWindow } from "@tauri-apps/api/window";
+import { inject as injectAnalytics } from "@vercel/analytics";
 
 import { DockletStore } from "./docklet.store";
 import { MainWindowComponent } from "./main/main-window.component";
@@ -16,6 +17,11 @@ export class AppComponent {
   readonly mainWindow = signal(false);
 
   constructor() {
+    // Initialize Vercel Analytics
+    if (typeof window !== "undefined") {
+      injectAnalytics();
+    }
+
     let role: "popup" | "main" = "popup";
     try {
       role = getCurrentWindow().label === "main" ? "main" : "popup";
