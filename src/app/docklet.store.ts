@@ -49,6 +49,7 @@ export class DockletStore {
   readonly llmCatalog = signal<LlmCatalogEntry[]>([]);
   readonly llmBusy = signal<Record<string, LlmOperation>>({});
   readonly engineBusy = signal(false);
+  readonly dockerLaunchBusy = signal(false);
 
   readonly services = computed<ServiceStatus[]>(
     () => this.snapshot()?.services ?? [],
@@ -176,6 +177,22 @@ export class DockletStore {
 
   hidePopup(): void {
     void this.api.hidePopup().catch(() => undefined);
+  }
+
+  async startDockerDesktop(): Promise<void> {
+    if (this.dockerLaunchBusy()) {
+      return;
+    }
+
+    this.dockerLaunchBusy.set(true);
+    try {
+      await this.api.startDockerDesktop();
+      this.showToast("Launching Docker Desktop…");
+    } catch (error) {
+      this.showToast(this.describeError(error), "danger");
+    } finally {
+      this.dockerLaunchBusy.set(false);
+    }
   }
 
   setMainPage(page: MainPage): void {
@@ -519,23 +536,23 @@ export class DockletStore {
     const tasks: Array<Promise<unknown>> = [
       this.api.getServices(),
       this.api.getAutostartEnabled(),
+      this.api.getLlmStatus(),
     ];
     if (this.role() === "main") {
       tasks.push(
         this.api.getSettings(),
         this.api.getMainPage(),
         this.api.getLlmCatalog(),
-        this.api.getLlmStatus(),
       );
     }
 
     const results = await Promise.allSettled(tasks);
     const servicesResult = results[0];
     const autostartResult = results[1];
-    const settingsResult = results[2];
-    const pageResult = results[3];
-    const catalogResult = results[4];
-    const llmResult = results[5];
+    const llmResult = results[2];
+    const settingsResult = results[3];
+    const pageResult = results[4];
+    const catalogResult = results[5];
 
     if (servicesResult?.status === "fulfilled") {
       this.snapshot.set(servicesResult.value as ServicesSnapshot);
@@ -662,9 +679,7 @@ export class DockletStore {
       const snapshot = await this.api.getServices();
       this.snapshot.set(snapshot);
       this.loading.set(false);
-      if (this.role() === "main") {
-        await this.refreshLlmQuietly();
-      }
+      await this.refreshLlmQuietly();
     } catch {
       // Keep the last good snapshot; explicit actions surface errors.
     } finally {
@@ -682,9 +697,7 @@ export class DockletStore {
         this.showToast(this.describeError(error), "danger");
       }
     }
-    if (this.role() === "main") {
-      await this.refreshLlmQuietly();
-    }
+    await this.refreshLlmQuietly();
   }
 
   private applyLlmProgress(payload: LlmProgressPayload): void {

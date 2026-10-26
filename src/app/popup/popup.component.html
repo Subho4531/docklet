@@ -127,17 +127,92 @@
     </div>
   </main>
 
+  @if (visibleLlms().length > 0) {
+    <main class="popup-main">
+      <div class="services-heading">
+        <span>Local AI</span>
+        <span class="services-hint">Click to toggle · right-click to copy</span>
+      </div>
+      <div class="service-scroll">
+        <div class="service-grid">
+          @for (model of visibleLlms(); track model.id) {
+            <button
+              type="button"
+              class="service-tile"
+              role="switch"
+              [class.is-on]="isLlmOn(model)"
+              [class.is-busy]="store.isLlmBusy(model.id)"
+              [attr.data-state]="model.state"
+              [attr.aria-checked]="isLlmOn(model)"
+              [attr.aria-busy]="store.isLlmBusy(model.id)"
+              [attr.aria-label]="
+                model.displayName +
+                ' — ' +
+                llmStateLabel(model) +
+                '. Left-click to toggle, right-click to copy endpoint.'
+              "
+              [title]="llmTileTitle(model)"
+              [disabled]="store.isLlmBusy(model.id)"
+              (click)="toggleLlm(model)"
+              (contextmenu)="copyLlmEndpoint($event, model)"
+            >
+              <span class="tile-head">
+                <span class="tile-icon">
+                  <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                    <path
+                      d="M12 3.4l1.9 4.9 5.2.4-4 3.3 1.3 5-4.4-2.8-4.4 2.8 1.3-5-4-3.3 5.2-.4L12 3.4z"
+                    />
+                    <path d="M6.5 19.4h11" />
+                  </svg>
+                </span>
+                <span
+                  class="switch"
+                  [class.is-on]="isLlmOn(model)"
+                  aria-hidden="true"
+                >
+                  <span class="switch-knob"></span>
+                </span>
+              </span>
+              <span class="tile-name">{{ model.displayName }}</span>
+              <span class="tile-state">
+                <span
+                  class="status-dot"
+                  [attr.data-state]="model.state"
+                  aria-hidden="true"
+                ></span>
+                {{ llmStateLabel(model) }}
+              </span>
+            </button>
+          }
+        </div>
+      </div>
+    </main>
+  }
+
   <footer class="popup-footer">
-    <span
-      class="engine-state"
-      [class.is-online]="store.dockerAvailable()"
-      [attr.aria-label]="
-        store.dockerAvailable() ? 'Docker is ready' : 'Docker is offline'
-      "
-    >
-      <span class="engine-dot" aria-hidden="true"></span>
-      <span>{{ store.dockerAvailable() ? "Docker ready" : "Docker offline" }}</span>
-    </span>
+    @if (!store.dockerAvailable()) {
+      <button
+        type="button"
+        class="engine-state engine-action"
+        [disabled]="store.dockerLaunchBusy()"
+        (click)="startDocker()"
+        title="Launch Docker Desktop"
+        aria-label="Start Docker Desktop"
+      >
+        <span class="engine-dot" aria-hidden="true"></span>
+        <span>{{
+          store.dockerLaunchBusy() ? "Starting Docker…" : "Start Docker"
+        }}</span>
+      </button>
+    } @else {
+      <span
+        class="engine-state is-online"
+        aria-label="Docker is ready"
+      >
+        <span class="engine-dot" aria-hidden="true"></span>
+        <span>Docker ready</span>
+      </span>
+    }
     <button type="button" class="open-app-button" (click)="openApp()">
       Open Docklet
       <svg viewBox="0 0 20 20" fill="none" aria-hidden="true">

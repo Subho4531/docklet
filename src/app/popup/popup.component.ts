@@ -10,7 +10,7 @@ import {
 } from "@angular/core";
 
 import { DockletStore } from "../docklet.store";
-import type { ServiceStatus } from "../models";
+import type { LlmModelStatus, ServiceStatus } from "../models";
 import { ServiceIconComponent } from "../service-icon.component";
 import { ToastComponent } from "../toast.component";
 
@@ -27,6 +27,9 @@ export class PopupComponent {
 
   readonly visibleServices = computed(() =>
     this.store.services().filter((service) => service.state !== "missing"),
+  );
+  readonly visibleLlms = computed(() =>
+    this.store.llmModels().filter((model) => model.state !== "downloading"),
   );
   readonly subtitle = computed(() => {
     if (this.store.loading() && !this.store.snapshot()) {
@@ -127,6 +130,44 @@ export class PopupComponent {
 
   tileTitle(service: ServiceStatus): string {
     return `${service.name} · left-click to ${this.isOn(service) ? "stop" : "start"} · right-click to copy URL`;
+  }
+
+  toggleLlm(model: LlmModelStatus): void {
+    void this.store.toggleLlm(model);
+  }
+
+  copyLlmEndpoint(event: Event, model: LlmModelStatus): void {
+    event.preventDefault();
+    void this.store.copyLlmValue(model.endpoint, "Endpoint");
+  }
+
+  isLlmOn(model: LlmModelStatus): boolean {
+    return model.state === "running";
+  }
+
+  llmStateLabel(model: LlmModelStatus): string {
+    const operation = this.store.llmOperationFor(model.id);
+    if (operation === "start") return "Starting";
+    if (operation === "stop") return "Stopping";
+
+    switch (model.state) {
+      case "running":
+        return "Live";
+      case "stopped":
+        return "Stopped";
+      case "error":
+        return "Needs attention";
+      default:
+        return "Stopped";
+    }
+  }
+
+  llmTileTitle(model: LlmModelStatus): string {
+    return `${model.displayName} · left-click to ${this.isLlmOn(model) ? "stop" : "start"} · right-click to copy endpoint`;
+  }
+
+  startDocker(): void {
+    void this.store.startDockerDesktop();
   }
 
   private scheduleFit(): void {

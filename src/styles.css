@@ -385,6 +385,18 @@ code {
   box-shadow: 0 0 0 2px rgba(111, 227, 178, 0.12);
 }
 
+.engine-state.engine-action {
+  transition: color 150ms var(--ease);
+}
+
+.engine-state.engine-action:hover:not(:disabled) {
+  color: var(--ink-soft);
+}
+
+.engine-state.engine-action:disabled {
+  opacity: 0.62;
+}
+
 .button-spinner,
 .spinner {
   display: inline-block;

@@ -100,6 +100,7 @@ pub fn run() {
             commands::search_docker_images,
             commands::hide_popup,
             commands::resize_popup,
+            commands::start_docker_desktop,
             commands::open_main,
             commands::get_main_page,
             commands::get_autostart_enabled,

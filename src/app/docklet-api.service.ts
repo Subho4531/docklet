@@ -89,6 +89,10 @@ export class DockletApi {
     return invoke<void>("hide_popup");
   }
 
+  startDockerDesktop(): Promise<void> {
+    return invoke<void>("start_docker_desktop");
+  }
+
   resizePopup(height: number): Promise<void> {
     return invoke<void>("resize_popup", { height });
   }

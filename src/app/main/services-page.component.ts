@@ -62,6 +62,10 @@ export class ServicesPageComponent {
     this.store.setMainPage("models");
   }
 
+  startDocker(): void {
+    void this.store.startDockerDesktop();
+  }
+
   toggleLlm(model: LlmModelStatus): void {
     void this.store.toggleLlm(model);
   }

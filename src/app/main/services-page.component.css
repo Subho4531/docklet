@@ -84,6 +84,11 @@
   gap: 3px;
 }
 
+.notice-action {
+  align-self: center;
+  margin-left: auto;
+}
+
 .notice strong {
   font-size: 11px;
   font-weight: 650;

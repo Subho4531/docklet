@@ -1,5 +1,6 @@
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
+use std::path::{Path, PathBuf};
 use std::time::Duration;
 use tokio::process::Command;
 
@@ -217,6 +218,90 @@ pub async fn ensure_docker() -> Result<(), String> {
     .map_err(|error| error.user_message())
 }
 
+/// Launches Docker Desktop so its engine comes up. Docklet keeps polling the
+/// daemon afterwards and reconnects on the next status refresh.
+pub async fn launch_desktop() -> Result<(), DockerError> {
+    let exe = find_desktop_exe().await.ok_or_else(|| {
+        DockerError::Io(
+            "Docker Desktop wasn't found. Open it manually once, then try again.".to_string(),
+        )
+    })?;
+
+    let mut command = std::process::Command::new(exe);
+    command.stdin(std::process::Stdio::null());
+
+    #[cfg(windows)]
+    {
+        use std::os::windows::process::CommandExt;
+        command.creation_flags(CREATE_NO_WINDOW);
+    }
+
+    command
+        .spawn()
+        .map_err(|error| DockerError::Io(error.to_string()))?;
+    Ok(())
+}
+
+/// Finds the Docker Desktop executable: the `docker` CLI's install directory
+/// first, then the usual per-machine and per-user install roots.
+async fn find_desktop_exe() -> Option<PathBuf> {
+    let mut candidates: Vec<PathBuf> = Vec::new();
+
+    if let Some(cli) = resolve_docker_cli_path().await {
+        candidates.extend(desktop_candidates_from_cli(&cli));
+    }
+
+    if let Ok(program_files) = std::env::var("ProgramFiles") {
+        candidates.push(PathBuf::from(program_files).join(r"Docker\Docker\Docker Desktop.exe"));
+    }
+
+    if let Ok(local_app_data) = std::env::var("LocalAppData") {
+        candidates.push(PathBuf::from(&local_app_data).join(r"Docker\Docker\Docker Desktop.exe"));
+        candidates.push(PathBuf::from(local_app_data).join(r"Docker\Docker Desktop.exe"));
+    }
+
+    candidates.into_iter().find(|candidate| candidate.is_file())
+}
+
+async fn resolve_docker_cli_path() -> Option<PathBuf> {
+    let mut command = Command::new("where.exe");
+    command.arg("docker").stdin(std::process::Stdio::null());
+
+    #[cfg(windows)]
+    {
+        command.creation_flags(CREATE_NO_WINDOW);
+    }
+
+    let output = tokio::time::timeout(Duration::from_secs(3), command.output())
+        .await
+        .ok()?
+        .ok()?;
+
+    if !output.status.success() {
+        return None;
+    }
+
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    let first_line = stdout
+        .lines()
+        .map(str::trim)
+        .find(|line| !line.is_empty())?;
+    let path = PathBuf::from(first_line);
+    if path.is_file() { Some(path) } else { None }
+}
+
+/// `Docker Desktop.exe` sits at the install root, while the CLI lives under
+/// `<install>\resources\bin`; walk up the ancestors looking for the app.
+fn desktop_candidates_from_cli(cli: &Path) -> Vec<PathBuf> {
+    let mut candidates: Vec<PathBuf> = cli
+        .ancestors()
+        .take(4)
+        .map(|ancestor| ancestor.join("Docker Desktop.exe"))
+        .collect();
+    candidates.reverse();
+    candidates
+}
+
 pub async fn inspect_container(name: &str) -> Result<Option<Value>, DockerError> {
     let output = match run_docker(&["inspect", "--type", "container", name]).await {
         Ok(output) => output,
@@ -315,5 +400,19 @@ mod tests {
         assert_eq!(result.description, "Official Redis");
         assert_eq!(result.star_count, 13624);
         assert!(result.is_official);
+    }
+
+    #[test]
+    fn locates_desktop_exe_from_the_cli_ancestors() {
+        let cli = PathBuf::from(r"C:\Program Files\Docker\Docker\resources\bin\docker.exe");
+        let candidates = desktop_candidates_from_cli(&cli);
+
+        assert_eq!(
+            candidates.first(),
+            Some(&PathBuf::from(
+                r"C:\Program Files\Docker\Docker\Docker Desktop.exe"
+            ))
+        );
+        assert_eq!(candidates.len(), 4);
     }
 }

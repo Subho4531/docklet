@@ -22,8 +22,19 @@
       </svg>
       <div>
         <strong>Docker Desktop is offline</strong>
-        <span>Start Docker Desktop, then Docklet will reconnect automatically.</span>
+        <span>Docklet reconnects automatically once the engine is up.</span>
       </div>
+      <button
+        type="button"
+        class="quiet-btn notice-action"
+        [disabled]="store.dockerLaunchBusy()"
+        (click)="startDocker()"
+      >
+        @if (store.dockerLaunchBusy()) {
+          <span class="button-spinner" aria-hidden="true"></span>
+        }
+        Start Docker Desktop
+      </button>
     </div>
   }
 

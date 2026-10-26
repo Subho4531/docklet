@@ -219,6 +219,28 @@ pub fn hide_popup(app: AppHandle) {
 }
 
 #[tauri::command]
+pub async fn start_docker_desktop(app: AppHandle) -> Result<(), String> {
+    docker::launch_desktop()
+        .await
+        .map_err(|error| error.user_message())?;
+
+    // Docker Desktop can take a while to bring the engine up. Publish status
+    // while waiting so every window flips to "ready" as soon as it answers.
+    let app_handle = app.clone();
+    tauri::async_runtime::spawn(async move {
+        for _ in 0..30 {
+            tokio::time::sleep(std::time::Duration::from_secs(3)).await;
+            let snapshot = refresh_and_publish(&app_handle).await;
+            if snapshot.docker_available {
+                break;
+            }
+        }
+    });
+
+    Ok(())
+}
+
+#[tauri::command]
 pub fn resize_popup(app: AppHandle, height: f64) -> Result<(), String> {
     let height = height.clamp(180.0, 700.0);
     let app_handle = app.clone();
